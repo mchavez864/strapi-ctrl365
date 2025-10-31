@@ -53,7 +53,7 @@ Antes de comenzar, asegúrate de tener instalado:
 
 - **Node.js**: Versión 18.0.0 o superior (hasta v22.x.x)
 - **npm**: Versión 6.0.0 o superior
-- **Base de datos**: MySQL, PostgreSQL o SQLite (SQLite por defecto)
+- **Base de datos**: MySQL
 
 ## Instalación
 
