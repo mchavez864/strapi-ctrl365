@@ -1,5 +1,5 @@
 {
-  "name": "strapi-ctrl-365",
+  "name": "ctrl-365-cms",
   "version": "0.1.0",
   "private": true,
   "description": "A Strapi application",
@@ -15,31 +15,22 @@
     "upgrade:dry": "npx @strapi/upgrade latest --dry"
   },
   "dependencies": {
-    "@strapi/plugin-cloud": "5.30.0",
-    "@strapi/plugin-users-permissions": "5.30.0",
-    "@strapi/strapi": "5.30.0",
+    "@strapi/plugin-cloud": "5.28.0",
+    "@strapi/plugin-users-permissions": "5.28.0",
+    "@strapi/strapi": "5.28.0",
     "mysql2": "3.9.8",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-router-dom": "^6.0.0",
-    "strapi-provider-upload-azure-sa": "^0.0.3",
     "styled-components": "^6.0.0"
   },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.16",
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "autoprefixer": "^10.4.21",
-    "tailwindcss": "^4.1.16",
-    "typescript": "^5"
-  },
+  "devDependencies": {},
   "engines": {
     "node": ">=18.0.0 <=22.x.x",
     "npm": ">=6.0.0"
   },
   "strapi": {
-    "uuid": "ebcad3a8-e876-4412-91e4-b5411119cd1e",
-    "installId": "3e05dbe089092b8ffe93aab228d2a349462ee85e83c1cfbda4b0c8b711f59b09"
+    "uuid": "47dc8015-9bdd-491b-8454-5ed45fc80bba",
+    "installId": "3e14d372e75b5f2fafb8f8ff340e8adfe06a844bc2129402bb4d5cdf86db6468"
   }
 }
