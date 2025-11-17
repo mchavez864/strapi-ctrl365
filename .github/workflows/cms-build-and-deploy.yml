@@ -41,6 +41,6 @@ jobs:
       - name: Deploy to Container App
         run: |
           az containerapp update \
-            --name ctrl-365-cms \
-            --resource-group ctrl365-rg \
-            --image ${{ secrets.ACR_LOGIN_SERVER }}/ctrl-365-cms:${{ github.sha }}
+            --name strapi-ctrl365 \
+            --resource-group WebCtrl365-staging \
+            --image ${{ secrets.ACR_LOGIN_SERVER }}/strapi-ctrl365:${{ github.sha }}
