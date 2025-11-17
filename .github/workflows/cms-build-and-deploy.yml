@@ -22,11 +22,11 @@ jobs:
  
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/strapi-ctrl365:${{ github.sha }} .
+          docker build -t ${{ secrets.STRAPI_LOGIN_SERVER }}/strapi-ctrl365:${{ github.sha }} .
  
       - name: Push Docker image
         run: |
-          docker push ${{ secrets.ACR_LOGIN_SERVER }}/strapi-ctrl365:${{ github.sha }}
+          docker push ${{ secrets.STRAPI_LOGIN_SERVER }}/strapi-ctrl365:${{ github.sha }}
  
   deploy:
     needs: build
