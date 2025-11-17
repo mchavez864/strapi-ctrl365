@@ -1,0 +1,46 @@
+name: CMS Build and Deploy
+ 
+on:
+  push:
+    branches:
+      - staging
+ 
+jobs:
+  build:
+    runs-on: ubuntu-latest
+ 
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+ 
+      - name: Login to ACR
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+ 
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/ctrl-365-cms:${{ github.sha }} .
+ 
+      - name: Push Docker image
+        run: |
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/ctrl-365-cms:${{ github.sha }}
+ 
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+ 
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+ 
+      - name: Deploy to Container App
+        run: |
+          az containerapp update \
+            --name ctrl-365-cms \
+            --resource-group ctrl365-rg \
+            --image ${{ secrets.ACR_LOGIN_SERVER }}/ctrl-365-cms:${{ github.sha }}
