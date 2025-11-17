@@ -16,9 +16,9 @@ jobs:
       - name: Login to ACR
         uses: azure/docker-login@v1
         with:
-          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
+          login-server: ${{ secrets.STRAPI_LOGIN_SERVERR }}
+          username: ${{ secrets.STRAPICTRL365_REGISTRY_USERNAME }}
+          password: ${{ secrets.STRAPICTRL365_REGISTRY_PASSWORD }}
  
       - name: Build Docker image
         run: |
