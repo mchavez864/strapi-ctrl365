@@ -16,7 +16,7 @@ jobs:
       - name: Login to ACR
         uses: azure/docker-login@v1
         with:
-          login-server: ${{ secrets.STRAPI_LOGIN_SERVERR }}
+          login-server: ${{ secrets.STRAPI_LOGIN_SERVER }}
           username: ${{ secrets.STRAPICTRL365_REGISTRY_USERNAME }}
           password: ${{ secrets.STRAPICTRL365_REGISTRY_PASSWORD }}
  
