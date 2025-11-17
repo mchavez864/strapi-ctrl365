@@ -1,5 +1,3 @@
-Dockerfile
- 
 # ---- BUILD STAGE ----
 
 FROM node:18-slim as build
