@@ -2,19 +2,17 @@
 module.exports = ({ env }) => ({
   upload: {
     config: {
-      provider: 'azure-storage',
+      provider: '@strapi/provider-upload-azure',
       providerOptions: {
-        account: env('AZURE_ACCOUNT_NAME'),       // webctrl365sa
-        accountKey: env('AZURE_ACCOUNT_KEY'),     // clave del storage account
-        containerName: env('AZURE_CONTAINER_NAME'), // staging
-        defaultPath: env('AZURE_DEFAULT_PATH', 'uploads'), // uploads
-        azureUploadSasToken: env('AZURE_SAS_TOKEN', null), // opcional
+        account: env('AZURE_ACCOUNT_NAME'),
+        accountKey: env('AZURE_ACCOUNT_KEY'),
+        containerName: env('AZURE_CONTAINER_NAME'),
+        defaultPath: env('AZURE_DEFAULT_PATH', 'uploads'),
+        azureUploadSasToken: env('AZURE_SAS_TOKEN', null),
         removeContainerName: env('AZURE_REMOVE_CN') === 'true',
-        maxConcurrent: 10, // opcional: número de uploads simultáneos
-        serviceBaseURL: env('AZURE_SERVICE_BASE_URL', null) // opcional si usas CDN
+        maxConcurrent: 10,
+        serviceBaseURL: env('AZURE_SERVICE_BASE_URL', null),
       },
     },
   },
 });
-
-
