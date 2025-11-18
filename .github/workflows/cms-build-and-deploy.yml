@@ -63,14 +63,14 @@ jobs:
             --name ${CONTAINER_APP_NAME} \
             --resource-group ${RESOURCE_GROUP} \
             --image ${REGISTRY}/${IMAGE_NAME}:${{ github.sha }} \
-            --env-vars DATABASE_CLIENT=mysql \
+            --set-env-vars DATABASE_CLIENT=mysql \
                         DATABASE_HOST=${{ secrets.STRAPI_DB_HOST }} \
                         DATABASE_PORT=${{ secrets.STRAPI_DB_PORT }} \
                         DATABASE_NAME=${{ secrets.STRAPI_DB_NAME }} \
                         DATABASE_USERNAME=${{ secrets.STRAPI_DB_USER }} \
                         DATABASE_PASSWORD=${{ secrets.STRAPI_DB_PASSWORD }} \
                         DATABASE_SSL=${{ secrets.STRAPI_DB_SSL }} \
-                        APP_KEYS=${{ secrets.STRAPI_APP_KEYS }} \
+                        APP_KEYS="${{ secrets.STRAPI_APP_KEYS }}" \
                         API_TOKEN_SALT=${{ secrets.STRAPI_API_TOKEN_SALT }} \
                         ADMIN_JWT_SECRET=${{ secrets.STRAPI_ADMIN_JWT_SECRET }} \
                         JWT_SECRET=${{ secrets.STRAPI_JWT_SECRET }} \
@@ -79,4 +79,5 @@ jobs:
                         AZURE_CONTAINER_NAME=${{ secrets.STRAPI_AZURE_CONTAINER_NAME }} \
                         AZURE_DEFAULT_PATH=${{ secrets.STRAPI_AZURE_DEFAULT_PATH }} \
                         AZURE_REMOVE_CN=${{ secrets.STRAPI_AZURE_REMOVE_CN }}
+
 
