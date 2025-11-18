@@ -1,0 +1,96 @@
+{
+  "kind": "collectionType",
+  "collectionName": "case_studies",
+  "info": {
+    "singularName": "case-study",
+    "pluralName": "case-studies",
+    "displayName": "CaseStudies"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "CardTitle": {
+      "type": "string",
+      "required": true
+    },
+    "CardText": {
+      "type": "string"
+    },
+    "CardSymbol": {
+      "type": "string"
+    },
+    "CardNumber": {
+      "type": "string"
+    },
+    "CardNumberText": {
+      "type": "string"
+    },
+    "Logo": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "HeroTitle": {
+      "type": "string",
+      "required": true
+    },
+    "HeroText": {
+      "type": "text"
+    },
+    "HeroSymbol": {
+      "type": "string"
+    },
+    "HeroNumber": {
+      "type": "string"
+    },
+    "HeroCurrency": {
+      "type": "string"
+    },
+    "HeroNumberText": {
+      "type": "string"
+    },
+    "Image": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "ChallengeTitle": {
+      "type": "string",
+      "required": true
+    },
+    "ChallengeText": {
+      "type": "text"
+    },
+    "SolutionTitle": {
+      "type": "string",
+      "required": true
+    },
+    "SolutionText1": {
+      "type": "text"
+    },
+    "SolutionText2": {
+      "type": "text"
+    },
+    "ImpactNumberList": {
+      "type": "component",
+      "component": "list.number-list",
+      "repeatable": true,
+      "max": 3
+    },
+    "ImpactTextList": {
+      "type": "component",
+      "component": "list.text-list",
+      "repeatable": true
+    },
+    "ImpactTextListTitle": {
+      "type": "string"
+    }
+  }
+}

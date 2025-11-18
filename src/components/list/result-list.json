@@ -1,0 +1,17 @@
+{
+  "collectionName": "components_list_result_lists",
+  "info": {
+    "displayName": "ResultList",
+    "icon": "bulletList"
+  },
+  "options": {},
+  "attributes": {
+    "Title": {
+      "type": "string"
+    },
+    "Text": {
+      "type": "text"
+    }
+  },
+  "config": {}
+}
