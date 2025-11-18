@@ -1,61 +1,50 @@
-name: CMS Build and Deploy
+name: CI/CD Strapi to Azure
 
 on:
   push:
     branches:
-      - staging
-
-env:
-  IMAGE_NAME: strapi-ctrl365
-  CONTAINER_APP_NAME: strapi-ctrl365
-  RESOURCE_GROUP: WebCtrl365-staging
-  REGISTRY: ${{ secrets.STRAPI_LOGIN_SERVER }}
+      - main
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: strapi-ctrl365
+      CONTAINER_APP_NAME: strapi-ctrl365
+      RESOURCE_GROUP: WebCtrl365-staging
+      REGISTRY: <tu-registry.azurecr.io>
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Azure Login
+      - name: Login to Azure
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Docker Login
-        run: |
-          echo "${{ secrets.STRAPICTRL365_REGISTRY_PASSWORD }}" | docker login ${{ secrets.STRAPI_LOGIN_SERVER }} -u ${{ secrets.STRAPICTRL365_REGISTRY_USERNAME }} --password-stdin
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Calculate version number
-        run: echo "BUILD_NUM=${GITHUB_RUN_NUMBER}" >> $GITHUB_ENV
-
       - name: Build & Push Image
         run: |
           docker buildx build --push \
-            --build-arg AZURE_ACCOUNT_NAME="${{ secrets.AZURE_ACCOUNT_NAME }}" \
-            --build-arg AZURE_ACCOUNT_KEY="${{ secrets.AZURE_ACCOUNT_KEY }}" \
-            --build-arg AZURE_CONTAINER_NAME="${{ secrets.AZURE_CONTAINER_NAME }}" \
-            --build-arg AZURE_DEFAULT_PATH="${{ secrets.AZURE_DEFAULT_PATH }}" \
-            --build-arg AZURE_REMOVE_CN="${{ secrets.AZURE_REMOVE_CN }}" \
-            --build-arg DATABASE_CLIENT="mysql" \
-            --build-arg DATABASE_HOST="${{ secrets.DATABASE_HOST }}" \
-            --build-arg DATABASE_PORT="3306" \
-            --build-arg DATABASE_NAME="${{ secrets.DATABASE_NAME }}" \
-            --build-arg DATABASE_USERNAME="${{ secrets.DATABASE_USERNAME }}" \
-            --build-arg DATABASE_PASSWORD="${{ secrets.DATABASE_PASSWORD }}" \
-            --build-arg DATABASE_SSL="true" \
-            --build-arg ADMIN_JWT_SECRET="${{ secrets.ADMIN_JWT_SECRET }}" \
-            --build-arg APP_KEYS="${{ secrets.APP_KEYS }}" \
-            --build-arg API_TOKEN_SALT="${{ secrets.API_TOKEN_SALT }}" \
-            --build-arg JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+            --build-arg AZURE_ACCOUNT_NAME=${{ secrets.AZURE_ACCOUNT_NAME }} \
+            --build-arg AZURE_ACCOUNT_KEY=${{ secrets.AZURE_ACCOUNT_KEY }} \
+            --build-arg AZURE_CONTAINER_NAME=${{ secrets.AZURE_CONTAINER_NAME }} \
+            --build-arg AZURE_DEFAULT_PATH=${{ secrets.AZURE_DEFAULT_PATH }} \
+            --build-arg AZURE_REMOVE_CN=${{ secrets.AZURE_REMOVE_CN }} \
+            --build-arg DATABASE_CLIENT=mysql \
+            --build-arg DATABASE_HOST=${{ secrets.DATABASE_HOST }} \
+            --build-arg DATABASE_PORT=3306 \
+            --build-arg DATABASE_NAME=${{ secrets.DATABASE_NAME }} \
+            --build-arg DATABASE_USERNAME=${{ secrets.DATABASE_USERNAME }} \
+            --build-arg DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }} \
+            --build-arg DATABASE_SSL=true \
+            --build-arg ADMIN_JWT_SECRET=${{ secrets.ADMIN_JWT_SECRET }} \
+            --build-arg APP_KEYS=${{ secrets.APP_KEYS }} \
+            --build-arg API_TOKEN_SALT=${{ secrets.API_TOKEN_SALT }} \
+            --build-arg JWT_SECRET=${{ secrets.JWT_SECRET }} \
             --file Dockerfile \
             --tag ${REGISTRY}/${IMAGE_NAME}:${{ github.sha }} \
             --tag ${REGISTRY}/${IMAGE_NAME}:latest \
-            --tag ${REGISTRY}/${IMAGE_NAME}:1.0.${BUILD_NUM} \
             .
 
       - name: Deploy to Azure Container App
@@ -65,19 +54,19 @@ jobs:
             --resource-group ${RESOURCE_GROUP} \
             --image ${REGISTRY}/${IMAGE_NAME}:${{ github.sha }} \
             --set-env-vars \
-              DATABASE_CLIENT="mysql" \
-              DATABASE_HOST="${{ secrets.DATABASE_HOST }}" \
-              DATABASE_PORT="3306" \
-              DATABASE_NAME="${{ secrets.DATABASE_NAME }}" \
-              DATABASE_USERNAME="${{ secrets.DATABASE_USERNAME }}" \
-              DATABASE_PASSWORD="${{ secrets.DATABASE_PASSWORD }}" \
-              DATABASE_SSL="true" \
-              ADMIN_JWT_SECRET="${{ secrets.ADMIN_JWT_SECRET }}" \
-              APP_KEYS="${{ secrets.APP_KEYS }}" \
-              API_TOKEN_SALT="${{ secrets.API_TOKEN_SALT }}" \
-              JWT_SECRET="${{ secrets.JWT_SECRET }}" \
-              AZURE_ACCOUNT_NAME="${{ secrets.AZURE_ACCOUNT_NAME }}" \
-              AZURE_ACCOUNT_KEY="${{ secrets.AZURE_ACCOUNT_KEY }}" \
-              AZURE_CONTAINER_NAME="${{ secrets.AZURE_CONTAINER_NAME }}" \
-              AZURE_DEFAULT_PATH="${{ secrets.AZURE_DEFAULT_PATH }}" \
-              AZURE_REMOVE_CN="${{ secrets.AZURE_REMOVE_CN }}"
+              DATABASE_CLIENT=mysql \
+              DATABASE_HOST=${{ secrets.DATABASE_HOST }} \
+              DATABASE_PORT=3306 \
+              DATABASE_NAME=${{ secrets.DATABASE_NAME }} \
+              DATABASE_USERNAME=${{ secrets.DATABASE_USERNAME }} \
+              DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }} \
+              DATABASE_SSL=true \
+              APP_KEYS=${{ secrets.APP_KEYS }} \
+              API_TOKEN_SALT=${{ secrets.API_TOKEN_SALT }} \
+              ADMIN_JWT_SECRET=${{ secrets.ADMIN_JWT_SECRET }} \
+              JWT_SECRET=${{ secrets.JWT_SECRET }} \
+              AZURE_ACCOUNT_NAME=${{ secrets.AZURE_ACCOUNT_NAME }} \
+              AZURE_ACCOUNT_KEY=${{ secrets.AZURE_ACCOUNT_KEY }} \
+              AZURE_CONTAINER_NAME=${{ secrets.AZURE_CONTAINER_NAME }} \
+              AZURE_DEFAULT_PATH=${{ secrets.AZURE_DEFAULT_PATH }} \
+              AZURE_REMOVE_CN=${{ secrets.AZURE_REMOVE_CN }}
