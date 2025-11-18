@@ -1,5 +1,5 @@
 // ./config/plugins.js
-export default ({ env }) => ({
+module.exports = ({ env }) => ({
   upload: {
     config: {
       provider: 'azure-storage',
@@ -16,4 +16,5 @@ export default ({ env }) => ({
     },
   },
 });
+
 
