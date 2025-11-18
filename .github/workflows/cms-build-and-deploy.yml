@@ -1,57 +1,50 @@
 name: CMS Build and Deploy
-
+ 
 on:
   push:
     branches:
-      - staging   # luego lo cambiamos a main
-
+      - staging   # luego se cambiará a main
+ 
 env:
   IMAGE_NAME: strapi-ctrl365
   CONTAINER_APP_NAME: strapi-ctrl365
   RESOURCE_GROUP: WebCtrl365-staging
   REGISTRY: ${{ secrets.STRAPI_LOGIN_SERVER }}
   BUILD_NUM: ${{ github.run_number }}
-
+ 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
+ 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
-      # --- LOGIN TO AZURE ---
-      - name: Azure Login (using AZURE_CREDENTIALS)
+ 
+      # LOGIN AZURE
+      - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      # --- LOGIN TO ACR ---
+ 
+      # LOGIN ACR
       - name: Login to ACR
         run: |
           az acr login --name $(echo "${REGISTRY}" | cut -d'.' -f1)
-
-      # --- SETUP BUILDX ---
+ 
+      # BUILDX
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      # --- BUILD IMAGE ---
-      - name: Build Docker Image
+ 
+      # BUILD + PUSH (SIN BACKSLASHES ERRÓNEOS)
+      - name: Build and Push Docker Image
         run: |
-          docker buildx build --load \
+          docker buildx build --push \
             -t $REGISTRY/$IMAGE_NAME:${{ github.sha }} \
             -t $REGISTRY/$IMAGE_NAME:latest \
             -t $REGISTRY/$IMAGE_NAME:1.0.${BUILD_NUM} \
             .
-
-      # --- PUSH TAGS ---
-      - name: Push Docker Image
-        run: |
-          docker push $REGISTRY/$IMAGE_NAME:${{ github.sha }}
-          docker push $REGISTRY/$IMAGE_NAME:latest
-          docker push $REGISTRY/$IMAGE_NAME:1.0.${BUILD_NUM}
-
-      # --- DEPLOY TO CONTAINER APPS ---
+ 
+      # DEPLOY A CONTAINER APPS
       - name: Deploy to Container App
         run: |
           az containerapp update \
