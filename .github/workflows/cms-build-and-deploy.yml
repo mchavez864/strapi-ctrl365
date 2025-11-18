@@ -3,13 +3,13 @@ name: CMS Build and Deploy
 on:
   push:
     branches:
-      - staging   # Más adelante cambiamos a "main"
+      - staging   # luego la cambiamos a main
 
 env:
-  ACR_NAME: stagingctrl365com
   IMAGE_NAME: strapi-ctrl365
   CONTAINER_APP_NAME: strapi-ctrl365
   RESOURCE_GROUP: WebCtrl365-staging
+  REGISTRY: ${{ secrets.STRAPI_LOGIN_SERVER }}
 
 jobs:
   build_and_deploy:
@@ -24,35 +24,29 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Login to ACR
-        run: |
-          az acr login --name $ACR_NAME
+      - name: Set Build Number
+        id: buildnumber
+        run: echo "BUILD_NUM=$(date +%s)" >> $GITHUB_ENV
 
-      - name: Set Image Tags
-        id: tags
+      - name: Build Docker Image
         run: |
-          echo "sha_tag=${GITHUB_SHA}" >> $GITHUB_ENV
-          echo "latest_tag=latest" >> $GITHUB_ENV
-          VERSION_TAG="v-$(date +'%Y.%m.%d-%H%M')"
-          echo "version_tag=$VERSION_TAG" >> $GITHUB_ENV
+          docker build -t $REGISTRY/$IMAGE_NAME:${{ github.sha }} .
 
-      - name: Build Docker images
-        run: |
-          docker build -t $ACR_NAME.azurecr.io/$IMAGE_NAME:$sha_tag .
-          docker tag $ACR_NAME.azurecr.io/$IMAGE_NAME:$sha_tag \
-                     $ACR_NAME.azurecr.io/$IMAGE_NAME:$latest_tag
-          docker tag $ACR_NAME.azurecr.io/$IMAGE_NAME:$sha_tag \
-                     $ACR_NAME.azurecr.io/$IMAGE_NAME:$version_tag
+          docker tag $REGISTRY/$IMAGE_NAME:${{ github.sha }} \
+            $REGISTRY/$IMAGE_NAME:latest
 
-      - name: Push Docker images
+          docker tag $REGISTRY/$IMAGE_NAME:${{ github.sha }} \
+            $REGISTRY/$IMAGE_NAME:1.0.${BUILD_NUM}
+
+      - name: Push Docker Image
         run: |
-          docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:$sha_tag
-          docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:$latest_tag
-          docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:$version_tag
+          docker push $REGISTRY/$IMAGE_NAME:${{ github.sha }}
+          docker push $REGISTRY/$IMAGE_NAME:latest
+          docker push $REGISTRY/$IMAGE_NAME:1.0.${BUILD_NUM}
 
       - name: Deploy to Container App
         run: |
           az containerapp update \
             --name $CONTAINER_APP_NAME \
             --resource-group $RESOURCE_GROUP \
-            --image $ACR_NAME.azurecr.io/$IMAGE_NAME:$sha_tag
+            --image $REGISTRY/$IMAGE_NAME:${{ github.sha }}
