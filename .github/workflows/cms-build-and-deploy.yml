@@ -19,17 +19,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      # Login to Azure using your Service Principal (AZURE_CREDENTIALS)
       - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      # Login to ACR using credentials regenerated from Azure
+      - name: Docker Login
+        run: |
+          echo "${{ secrets.STRAPICTRL365_REGISTRY_PASSWORD }}" | docker login ${{ secrets.STRAPI_LOGIN_SERVER }} \
+            -u ${{ secrets.STRAPICTRL365_REGISTRY_USERNAME }} --password-stdin
+
       - name: Setup Docker Buildx
         run: docker buildx create --use
 
-      - name: Docker Login
-        run: echo "${{ secrets.STRAPICTRL365_REGISTRY_PASSWORD }}" | docker login ${{ secrets.STRAPI_LOGIN_SERVER }} -u ${{ secrets.STRAPICTRL365_REGISTRY_USERNAME }} --password-stdin
-      
       - name: Calculate version number
         run: echo "BUILD_NUM=${GITHUB_RUN_NUMBER}" >> $GITHUB_ENV
 
@@ -48,5 +52,3 @@ jobs:
             --name ${CONTAINER_APP_NAME} \
             --resource-group ${RESOURCE_GROUP} \
             --image ${REGISTRY}/${IMAGE_NAME}:${{ github.sha }}
-
-
