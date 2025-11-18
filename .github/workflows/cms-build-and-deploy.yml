@@ -1,5 +1,5 @@
 name: CMS Build and Deploy
-
+ 
 on:
   push:
     branches:
@@ -9,43 +9,43 @@ env:
   IMAGE_NAME: strapi-ctrl365
   CONTAINER_APP_NAME: strapi-ctrl365
   RESOURCE_GROUP: WebCtrl365-staging
-
+  
 jobs:
-  build-and-push:
+  build:
     runs-on: ubuntu-latest
-
+ 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
+ 
       - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Build Docker Image
+        
+      - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.STRAPI_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }} .
-
-      - name: Push Docker Image
+          docker build -t ${{ secrets.STRAPI_LOGIN_SERVER }}/strapi-ctrl365:${{ github.sha }} .
+ 
+      - name: Push Docker image
         run: |
-          docker push ${{ secrets.STRAPI_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ secrets.STRAPI_LOGIN_SERVER }}/strapi-ctrl365:${{ github.sha }}
 
   deploy:
-    needs: build-and-push
+    needs: build
     runs-on: ubuntu-latest
-
+ 
     steps:
-      - name: Azure Login (Service Principal)
+      - name: Azure Login
         uses: azure/login@v1
         with:
           client-id: ${{ secrets.STRAPICTRL365_AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.STRAPICTRL365_AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.STRAPICTRL365_AZURE_SUBSCRIPTION_ID }}
-
-      - name: Deploy to Azure Container Apps
+ 
+      - name: Deploy to Container App
         run: |
           az containerapp update \
             --name ${{ env.CONTAINER_APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ secrets.STRAPI_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            --image ${{ secrets.STRAPI_LOGIN_SERVER }}/strapi-ctrl365:${{ github.sha }}
