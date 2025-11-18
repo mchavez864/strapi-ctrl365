@@ -44,7 +44,7 @@ jobs:
       - name: Build Strapi Admin
         run: |
           yarn install
-          yarn build --clean
+          yarn build
 
       # 7️⃣ Build & Push Docker image to ACR
       - name: Build & Push Image
@@ -79,3 +79,4 @@ jobs:
                         AZURE_CONTAINER_NAME=${{ secrets.STRAPI_AZURE_CONTAINER_NAME }} \
                         AZURE_DEFAULT_PATH=${{ secrets.STRAPI_AZURE_DEFAULT_PATH }} \
                         AZURE_REMOVE_CN=${{ secrets.STRAPI_AZURE_REMOVE_CN }}
+
