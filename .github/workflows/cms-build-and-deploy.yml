@@ -47,4 +47,6 @@ jobs:
           az containerapp update \
             --name ${{ env.CONTAINER_APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ secrets.STRAPI_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            #--image ${{ secrets.STRAPI_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            --image $STRAPI_LOGIN_SERVER/strapi-ctrl365:${{ github.sha }}
+
