@@ -25,11 +25,11 @@ jobs:
         
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.STRAPI_LOGIN_SERVER }}/strapi-ctrl365:${{ github.sha }} .
+          docker build -t ${{ secrets.STRAPI_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }} .
  
       - name: Push Docker image
         run: |
-          docker push ${{ secrets.STRAPI_LOGIN_SERVER }}/strapi-ctrl365:${{ github.sha }}
+          docker push ${{ secrets.STRAPI_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
   deploy:
     needs: build
@@ -40,6 +40,7 @@ jobs:
         uses: azure/login@v1
         with:
           client-id: ${{ secrets.STRAPICTRL365_AZURE_CLIENT_ID }}
+          client-secret: ${{ secrets.STRAPICTRL365_AZURE_CLIENT_SECRET }}
           tenant-id: ${{ secrets.STRAPICTRL365_AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.STRAPICTRL365_AZURE_SUBSCRIPTION_ID }}
  
@@ -48,4 +49,5 @@ jobs:
           az containerapp update \
             --name ${{ env.CONTAINER_APP_NAME }} \
             --resource-group ${{ env.RESOURCE_GROUP }} \
-            --image ${{ secrets.STRAPI_LOGIN_SERVER }}/strapi-ctrl365:${{ github.sha }}
+            --image ${{ secrets.STRAPI_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
