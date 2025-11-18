@@ -56,6 +56,10 @@ jobs:
             --build-arg DATABASE_USERNAME=${{ secrets.DATABASE_USERNAME }} \
             --build-arg DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }} \
             --build-arg DATABASE_SSL=true \
+            --build-arg APP_KEYS=${{ secrets.APP_KEYS }} \
+            --build-arg API_TOKEN_SALT=${{ secrets.API_TOKEN_SALT }} \
+            --build-arg ADMIN_JWT_SECRET=${{ secrets.ADMIN_JWT_SECRET }} \
+            --build-arg JWT_SECRET=${{ secrets.JWT_SECRET }} \
             --file Dockerfile \
             --tag ${REGISTRY}/${IMAGE_NAME}:${{ github.sha }} \
             --tag ${REGISTRY}/${IMAGE_NAME}:latest \
@@ -85,3 +89,4 @@ jobs:
               AZURE_CONTAINER_NAME=${{ secrets.AZURE_CONTAINER_NAME }} \
               AZURE_DEFAULT_PATH=${{ secrets.AZURE_DEFAULT_PATH }} \
               AZURE_REMOVE_CN=${{ secrets.AZURE_REMOVE_CN }}
+
