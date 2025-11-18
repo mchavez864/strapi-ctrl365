@@ -28,7 +28,7 @@ jobs:
         run: docker buildx create --use
 
       - name: Docker Login
-        run: echo "${{ secrets.STRAPI_PASSWORD }}" | docker login ${{ secrets.STRAPI_LOGIN_SERVER }} -u ${{ secrets.STRAPI_USERNAME }} --password-stdin
+        run: echo "${{ secrets.STRAPICTRL365_REGISTRY_PASSWORD }}" | docker login ${{ secrets.STRAPI_LOGIN_SERVER }} -u ${{ secrets.STRAPICTRL365_REGISTRY_USERNAME }} --password-stdin
 
       - name: Calculate version number
         run: echo "BUILD_NUM=${GITHUB_RUN_NUMBER}" >> $GITHUB_ENV
@@ -48,3 +48,4 @@ jobs:
             --name ${CONTAINER_APP_NAME} \
             --resource-group ${RESOURCE_GROUP} \
             --image ${REGISTRY}/${IMAGE_NAME}:${{ github.sha }}
+
