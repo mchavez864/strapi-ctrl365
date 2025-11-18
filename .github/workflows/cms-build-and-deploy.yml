@@ -30,17 +30,17 @@ jobs:
       - name: Calculate version number
         run: echo "BUILD_NUM=${GITHUB_RUN_NUMBER}" >> $GITHUB_ENV
 
-      - name: Build & Push Image (no multiline, no backslashes)
-        run: >
-          docker buildx build --push
-          --tag ${REGISTRY}/${IMAGE_NAME}:${{ github.sha }}
-          --tag ${REGISTRY}/${IMAGE_NAME}:latest
-          --tag ${REGISTRY}/${IMAGE_NAME}:1.0.${BUILD_NUM}
-          .
+      - name: Build & Push Image
+        run: |
+          docker buildx build --push \
+            --tag ${REGISTRY}/${IMAGE_NAME}:${{ github.sha }} \
+            --tag ${REGISTRY}/${IMAGE_NAME}:latest \
+            --tag ${REGISTRY}/${IMAGE_NAME}:1.0.${BUILD_NUM} \
+            .
 
       - name: Deploy to Azure Container App
-        run: >
-          az containerapp update
-          --name ${CONTAINER_APP_NAME}
-          --resource-group ${RESOURCE_GROUP}
-          --image ${REGISTRY}/${IMAGE_NAME}:${{ github.sha }}
+        run: |
+          az containerapp update \
+            --name ${CONTAINER_APP_NAME} \
+            --resource-group ${RESOURCE_GROUP} \
+            --image ${REGISTRY}/${IMAGE_NAME}:${{ github.sha }}
