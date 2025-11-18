@@ -3,7 +3,7 @@ name: CMS Build and Deploy
 on:
   push:
     branches:
-      - staging
+      - staging   # Más adelante cambiamos a "main"
 
 env:
   ACR_NAME: stagingctrl365com
@@ -12,7 +12,7 @@ env:
   RESOURCE_GROUP: WebCtrl365-staging
 
 jobs:
-  build:
+  build_and_deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -28,27 +28,31 @@ jobs:
         run: |
           az acr login --name $ACR_NAME
 
-      - name: Build Docker image
+      - name: Set Image Tags
+        id: tags
         run: |
-          docker build -t $ACR_NAME.azurecr.io/$IMAGE_NAME:${GITHUB_SHA} .
+          echo "sha_tag=${GITHUB_SHA}" >> $GITHUB_ENV
+          echo "latest_tag=latest" >> $GITHUB_ENV
+          VERSION_TAG="v-$(date +'%Y.%m.%d-%H%M')"
+          echo "version_tag=$VERSION_TAG" >> $GITHUB_ENV
 
-      - name: Push Docker image
+      - name: Build Docker images
         run: |
-          docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:${GITHUB_SHA}
+          docker build -t $ACR_NAME.azurecr.io/$IMAGE_NAME:$sha_tag .
+          docker tag $ACR_NAME.azurecr.io/$IMAGE_NAME:$sha_tag \
+                     $ACR_NAME.azurecr.io/$IMAGE_NAME:$latest_tag
+          docker tag $ACR_NAME.azurecr.io/$IMAGE_NAME:$sha_tag \
+                     $ACR_NAME.azurecr.io/$IMAGE_NAME:$version_tag
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Azure Login
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Push Docker images
+        run: |
+          docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:$sha_tag
+          docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:$latest_tag
+          docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:$version_tag
 
       - name: Deploy to Container App
         run: |
           az containerapp update \
             --name $CONTAINER_APP_NAME \
             --resource-group $RESOURCE_GROUP \
-            --image $ACR_NAME.azurecr.io/$IMAGE_NAME:${GITHUB_SHA}
+            --image $ACR_NAME.azurecr.io/$IMAGE_NAME:$sha_tag
