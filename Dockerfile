@@ -12,27 +12,24 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Copiamos package.json y lockfiles
-COPY package*.json yarn.lock* pnpm-lock.yaml* .npmrc* ./
+# Copiamos package.json y lockfile si existe
+COPY package*.json ./
 
-# Instalamos dependencias según el lockfile disponible
-RUN \
-  if [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then npm ci; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm install --frozen-lockfile; \
-  else npm install; \
-  fi
+# Instalamos dependencias según lockfile disponible (usa npm)
+RUN if [ -f package-lock.json ]; then npm ci --prefer-offline --no-audit --progress=false; else npm install --no-audit --progress=false; fi
 
-# Copiamos todo el código
+# Copiamos el resto del código
 COPY . .
 
-# ---- ARGs de secretos y DB ----
+# ---- ARGs de secretos y DB (se pasan desde workflow) ----
+# Azure Storage
 ARG AZURE_ACCOUNT_NAME
 ARG AZURE_ACCOUNT_KEY
 ARG AZURE_CONTAINER_NAME
 ARG AZURE_DEFAULT_PATH
 ARG AZURE_REMOVE_CN
 
+# MySQL
 ARG DATABASE_CLIENT
 ARG DATABASE_HOST
 ARG DATABASE_PORT
@@ -41,12 +38,13 @@ ARG DATABASE_USERNAME
 ARG DATABASE_PASSWORD
 ARG DATABASE_SSL
 
+# Secrets de Strapi
 ARG ADMIN_JWT_SECRET
 ARG APP_KEYS
 ARG API_TOKEN_SALT
 ARG JWT_SECRET
 
-# ---- ENV temporales para build ----
+# ---- ENV temporales para build (no hardcodea valores, vienen por ARG) ----
 ENV AZURE_ACCOUNT_NAME=$AZURE_ACCOUNT_NAME
 ENV AZURE_ACCOUNT_KEY=$AZURE_ACCOUNT_KEY
 ENV AZURE_CONTAINER_NAME=$AZURE_CONTAINER_NAME
@@ -67,11 +65,12 @@ ENV API_TOKEN_SALT=$API_TOKEN_SALT
 ENV JWT_SECRET=$JWT_SECRET
 
 # Build del admin
-RUN yarn build
+RUN npm run build
 
 # ---- RUNTIME STAGE ----
 FROM node:18-slim
 
+# Dependencias runtime para sharp/vips si hace falta
 RUN apt-get update && apt-get install -y \
   libvips-dev \
   && apt-get clean
@@ -83,7 +82,7 @@ EXPOSE 1337
 # Copiamos desde build
 COPY --from=builder /app /app
 
-# Declaramos ENV runtime
+# Declaramos ENV runtime (serán sobrescritos por ACA con --set-env-vars)
 ENV AZURE_ACCOUNT_NAME=$AZURE_ACCOUNT_NAME
 ENV AZURE_ACCOUNT_KEY=$AZURE_ACCOUNT_KEY
 ENV AZURE_CONTAINER_NAME=$AZURE_CONTAINER_NAME
@@ -101,4 +100,10 @@ ENV DATABASE_SSL=$DATABASE_SSL
 ENV ADMIN_JWT_SECRET=$ADMIN_JWT_SECRET
 ENV APP_KEYS=$APP_KEYS
 ENV API_TOKEN_SALT=$API_TOKEN_SALT
-ENV
+ENV JWT_SECRET=$JWT_SECRET
+
+# Usuario no root
+RUN useradd -m strapi
+USER strapi
+
+CMD ["npm", "run", "start"]
