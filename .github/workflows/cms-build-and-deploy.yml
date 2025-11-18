@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - staging
-      # cuando quieras usar main, simplemente agregas:
-      # - main
 
 env:
   IMAGE_NAME: strapi-ctrl365
@@ -26,25 +24,26 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Install buildx
+      - name: Configure Docker Buildx
         run: |
           docker buildx create --use
 
       - name: Calculate build number
         id: version
         run: |
-          echo "BUILD_NUM=$(( ${GITHUB_RUN_NUMBER} ))" >> $GITHUB_ENV
+          echo "BUILD_NUM=${GITHUB_RUN_NUMBER}" >> $GITHUB_ENV
           echo "Using version: 1.0.${GITHUB_RUN_NUMBER}"
 
       - name: Build and Push Docker Image
         run: |
-          docker buildx build --push \
-            -t ${REGISTRY}/${IMAGE_NAME}:${{ github.sha }} \
-            -t ${REGISTRY}/${IMAGE_NAME}:latest \
-            -t ${REGISTRY}/${IMAGE_NAME}:1.0.${BUILD_NUM} \
+          docker buildx build \
+            --push \
+            --tag ${REGISTRY}/${IMAGE_NAME}:${{ github.sha }} \
+            --tag ${REGISTRY}/${IMAGE_NAME}:latest \
+            --tag ${REGISTRY}/${IMAGE_NAME}:1.0.${BUILD_NUM} \
             .
 
-      - name: Deploy to Container App
+      - name: Deploy to Azure Container App
         run: |
           az containerapp update \
             --name ${CONTAINER_APP_NAME} \
