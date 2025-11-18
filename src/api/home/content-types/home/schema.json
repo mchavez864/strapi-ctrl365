@@ -21,7 +21,63 @@
         "i18n": {
           "localized": true
         }
-      }
+      },
+      "required": true
+    },
+    "Subtitle": {
+      "type": "string",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      },
+      "required": false
+    },
+    "HeroVideo": {
+      "type": "media",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      },
+      "multiple": false,
+      "allowedTypes": [
+        "videos"
+      ]
+    },
+    "SliderSoluciones": {
+      "type": "component",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      },
+      "component": "sliders.slider",
+      "repeatable": true
+    },
+    "OurDNA": {
+      "type": "component",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      },
+      "component": "sliders.card-slider",
+      "repeatable": true,
+      "min": 4,
+      "max": 4
+    },
+    "OrbSlider": {
+      "type": "component",
+      "pluginOptions": {
+        "i18n": {
+          "localized": true
+        }
+      },
+      "component": "sliders.orb-slider",
+      "repeatable": true,
+      "min": 5,
+      "max": 5
     }
   }
 }

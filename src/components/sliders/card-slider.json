@@ -1,0 +1,19 @@
+{
+  "collectionName": "components_sliders_card_sliders",
+  "info": {
+    "displayName": "CardSlider",
+    "icon": "apps"
+  },
+  "options": {},
+  "attributes": {
+    "Title": {
+      "type": "string",
+      "required": true
+    },
+    "Text": {
+      "type": "text",
+      "required": true
+    }
+  },
+  "config": {}
+}

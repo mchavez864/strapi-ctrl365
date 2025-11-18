@@ -1,0 +1,23 @@
+{
+  "collectionName": "components_list_number_lists",
+  "info": {
+    "displayName": "NumberList",
+    "icon": "bulletList"
+  },
+  "options": {},
+  "attributes": {
+    "Number": {
+      "type": "string",
+      "required": true
+    },
+    "Text": {
+      "type": "string",
+      "required": true
+    },
+    "Description": {
+      "type": "string",
+      "required": true
+    }
+  },
+  "config": {}
+}

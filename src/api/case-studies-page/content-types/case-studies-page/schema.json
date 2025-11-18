@@ -1,0 +1,30 @@
+{
+  "kind": "singleType",
+  "collectionName": "case_studies_pages",
+  "info": {
+    "singularName": "case-studies-page",
+    "pluralName": "case-studies-pages",
+    "displayName": "CaseStudiesPage"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "HeroTitle": {
+      "type": "string",
+      "required": true
+    },
+    "HeroText1": {
+      "type": "text"
+    },
+    "HeroText2": {
+      "type": "text"
+    },
+    "ResultSlider": {
+      "type": "component",
+      "component": "sliders.slider-list",
+      "repeatable": true
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "collectionName": "components_sliders_orb_sliders",
+  "info": {
+    "displayName": "OrbSlider",
+    "icon": "globe"
+  },
+  "options": {},
+  "attributes": {
+    "Title": {
+      "type": "string"
+    },
+    "Text1": {
+      "type": "text"
+    },
+    "Text2": {
+      "type": "string"
+    },
+    "Percentage": {
+      "type": "string"
+    },
+    "Symbol": {
+      "type": "string"
+    }
+  },
+  "config": {}
+}

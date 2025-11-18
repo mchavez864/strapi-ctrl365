@@ -1,0 +1,17 @@
+{
+  "collectionName": "components_sliders_slider_lists",
+  "info": {
+    "displayName": "SliderList",
+    "icon": "layer"
+  },
+  "options": {},
+  "attributes": {
+    "TextItems": {
+      "type": "component",
+      "component": "list.result-list",
+      "repeatable": true,
+      "max": 6
+    }
+  },
+  "config": {}
+}
