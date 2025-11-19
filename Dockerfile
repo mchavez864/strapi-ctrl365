@@ -51,5 +51,8 @@ EXPOSE 1337
 # En el container se sobreescriben con --set-env-vars
 ENV NODE_ENV=development
 
-# Comando por defecto: servidor Strapi
-CMD ["npm", "run", "start"]
+# Comando por defecto: servidor Strapi (modo productivo)
+#CMD ["npm", "run", "start"]
+
+# 👇 Modo desarrollo: habilita Content-Type Builder
+CMD ["npm", "run", "develop"]
