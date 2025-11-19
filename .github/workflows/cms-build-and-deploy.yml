@@ -1,122 +1,104 @@
-name: CMS Build and Deploy Staging
+# ---- BUILD STAGE ----
+FROM node:18-slim AS builder
 
-on:
-  push:
-    branches:
-      - staging
+# Dependencias necesarias para Strapi y librerías nativas
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    python3 \
+    pkg-config \
+    libvips-dev \
+    git \
+    && apt-get clean
 
-env:
-  IMAGE_NAME: strapi-ctrl365
-  CONTAINER_APP_NAME: strapi-ctrl365
-  RESOURCE_GROUP: WebCtrl365-staging
-  STRAPI_LOGIN_SERVER: ${{ secrets.STRAPI_LOGIN_SERVER }}
+WORKDIR /app
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
+# Copiamos package.json y yarn.lock primero para usar cache de Docker
+COPY package.json yarn.lock ./
 
-    steps:
-      # 1️⃣ Checkout repository
-      - name: Checkout
-        uses: actions/checkout@v3
+# Instalamos dependencias robusto: yarn o npm
+RUN if [ -f yarn.lock ]; then \
+        yarn install --frozen-lockfile --network-concurrency 1; \
+    else \
+        npm install --no-audit --prefer-offline --progress=false; \
+    fi
 
-      # 2️⃣ Azure Login
-      - name: Azure Login
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+# Copiamos el resto del código
+COPY . .
 
-      # 3️⃣ Setup Docker Buildx
-      - name: Setup Docker Buildx
-        run: docker buildx create --use
+# Build arguments para secretos y DB
+ARG AZURE_ACCOUNT_NAME
+ARG AZURE_ACCOUNT_KEY
+ARG AZURE_CONTAINER_NAME
+ARG AZURE_DEFAULT_PATH
+ARG AZURE_REMOVE_CN
+ARG DATABASE_CLIENT
+ARG DATABASE_HOST
+ARG DATABASE_PORT
+ARG DATABASE_NAME
+ARG DATABASE_USERNAME
+ARG DATABASE_PASSWORD
+ARG DATABASE_SSL
+ARG ADMIN_STRAPI_JWT_SECRET
+ARG STRAPI_APP_KEYS
+ARG STRAPI_API_TOKEN_SALT
+ARG STRAPI_JWT_SECRET
 
-      # 4️⃣ Validate required secrets
-      #- name: Validate Secrets
-      #  run: |
-       #   REQUIRED_SECRETS=("STRAPICTRL365_REGISTRY_USERNAME" "STRAPICTRL365_REGISTRY_PASSWORD" "ADMIN_STRAPI_JWT_SECRET" "STRAPI_APP_KEYS" "STRAPI_API_TOKEN_SALT" "STRAPI_JWT_SECRET" "AZURE_ACCOUNT_NAME" "AZURE_ACCOUNT_KEY" "AZURE_CONTAINER_NAME" "AZURE_DEFAULT_PATH" "AZURE_REMOVE_CN" "DATABASE_HOST" "DATABASE_NAME" "DATABASE_USERNAME" "DATABASE_PASSWORD")
-       #   for SECRET in "${REQUIRED_SECRETS[@]}"; do
-       #     if [ -z "${{ secrets[$SECRET] }}" ]; then
-        #      echo "❌ Secret $SECRET no está configurado"
-        #      exit 1
-         #   fi
-       #   done
+# Variables de entorno para build
+ENV AZURE_ACCOUNT_NAME=$AZURE_ACCOUNT_NAME
+ENV AZURE_ACCOUNT_KEY=$AZURE_ACCOUNT_KEY
+ENV AZURE_CONTAINER_NAME=$AZURE_CONTAINER_NAME
+ENV AZURE_DEFAULT_PATH=$AZURE_DEFAULT_PATH
+ENV AZURE_REMOVE_CN=$AZURE_REMOVE_CN
+ENV DATABASE_CLIENT=$DATABASE_CLIENT
+ENV DATABASE_HOST=$DATABASE_HOST
+ENV DATABASE_PORT=$DATABASE_PORT
+ENV DATABASE_NAME=$DATABASE_NAME
+ENV DATABASE_USERNAME=$DATABASE_USERNAME
+ENV DATABASE_PASSWORD=$DATABASE_PASSWORD
+ENV DATABASE_SSL=$DATABASE_SSL
+ENV ADMIN_STRAPI_JWT_SECRET=$ADMIN_STRAPI_JWT_SECRET
+ENV STRAPI_APP_KEYS=$STRAPI_APP_KEYS
+ENV STRAPI_API_TOKEN_SALT=$STRAPI_API_TOKEN_SALT
+ENV STRAPI_JWT_SECRET=$STRAPI_JWT_SECRET
 
-      # 5️⃣ Docker Login
-      - name: Docker Login
-        run: |
-          echo "${{ secrets.STRAPICTRL365_REGISTRY_PASSWORD }}" | docker login \
-            $STRAPI_LOGIN_SERVER \
-            -u ${{ secrets.STRAPICTRL365_REGISTRY_USERNAME }} \
-            --password-stdin
+# Build del admin
+RUN yarn build
 
-      # 6️⃣ Set build number and SHA
-      - name: Set build number and SHA
-        run: |
-          echo "BUILD_NUM=${GITHUB_RUN_NUMBER}" >> $GITHUB_ENV
-          echo "GITHUB_SHA=${GITHUB_SHA}" >> $GITHUB_ENV
+# ---- RUNTIME STAGE ----
+FROM node:18-slim
 
-      # 7️⃣ Build & Push Docker Image
-      - name: Build & Push Docker Image
-        run: |
-          docker buildx build --push \
-            --file Dockerfile \
-            --build-arg AZURE_ACCOUNT_NAME=$AZURE_ACCOUNT_NAME \
-            --build-arg AZURE_ACCOUNT_KEY=$AZURE_ACCOUNT_KEY \
-            --build-arg AZURE_CONTAINER_NAME=$AZURE_CONTAINER_NAME \
-            --build-arg AZURE_DEFAULT_PATH=$AZURE_DEFAULT_PATH \
-            --build-arg AZURE_REMOVE_CN=$AZURE_REMOVE_CN \
-            --build-arg DATABASE_CLIENT=mysql \
-            --build-arg DATABASE_HOST=$DATABASE_HOST \
-            --build-arg DATABASE_PORT=3306 \
-            --build-arg DATABASE_NAME=$DATABASE_NAME \
-            --build-arg DATABASE_USERNAME=$DATABASE_USERNAME \
-            --build-arg DATABASE_PASSWORD=$DATABASE_PASSWORD \
-            --build-arg DATABASE_SSL=true \
-            --build-arg ADMIN_STRAPI_JWT_SECRET=$ADMIN_STRAPI_JWT_SECRET \
-            --build-arg STRAPI_APP_KEYS=$STRAPI_APP_KEYS \
-            --build-arg STRAPI_API_TOKEN_SALT=$STRAPI_API_TOKEN_SALT \
-            --build-arg STRAPI_JWT_SECRET=$STRAPI_JWT_SECRET \
-            --tag $STRAPI_LOGIN_SERVER/$IMAGE_NAME:$GITHUB_SHA \
-            --tag $STRAPI_LOGIN_SERVER/$IMAGE_NAME:latest \
-            --tag $STRAPI_LOGIN_SERVER/$IMAGE_NAME:1.0.$BUILD_NUM \
-            .
+# Dependencias runtime
+RUN apt-get update && apt-get install -y \
+    libvips-dev \
+    && apt-get clean
 
-      # 8️⃣ Deploy to Azure Container App
-      - name: Deploy to Azure Container App
-        run: |
-          az containerapp update \
-            --name $CONTAINER_APP_NAME \
-            --resource-group $RESOURCE_GROUP \
-            --image $STRAPI_LOGIN_SERVER/$IMAGE_NAME:$GITHUB_SHA \
-            --set-env-vars \
-              DATABASE_CLIENT=mysql \
-              DATABASE_HOST=$DATABASE_HOST \
-              DATABASE_PORT=3306 \
-              DATABASE_NAME=$DATABASE_NAME \
-              DATABASE_USERNAME=$DATABASE_USERNAME \
-              DATABASE_PASSWORD=$DATABASE_PASSWORD \
-              DATABASE_SSL=true \
-              STRAPI_APP_KEYS=$STRAPI_APP_KEYS \
-              STRAPI_API_TOKEN_SALT=$STRAPI_API_TOKEN_SALT \
-              ADMIN_STRAPI_JWT_SECRET=$ADMIN_STRAPI_JWT_SECRET \
-              STRAPI_JWT_SECRET=$STRAPI_JWT_SECRET \
-              AZURE_ACCOUNT_NAME=$AZURE_ACCOUNT_NAME \
-              AZURE_ACCOUNT_KEY=$AZURE_ACCOUNT_KEY \
-              AZURE_CONTAINER_NAME=$AZURE_CONTAINER_NAME \
-              AZURE_DEFAULT_PATH=$AZURE_DEFAULT_PATH \
-              AZURE_REMOVE_CN=$AZURE_REMOVE_CN
-        env:
-          ADMIN_STRAPI_JWT_SECRET: ${{ secrets.ADMIN_STRAPI_JWT_SECRET }}
-          STRAPI_APP_KEYS: ${{ secrets.STRAPI_APP_KEYS }}
-          STRAPI_API_TOKEN_SALT: ${{ secrets.STRAPI_API_TOKEN_SALT }}
-          STRAPI_JWT_SECRET: ${{ secrets.STRAPI_JWT_SECRET }}
-          AZURE_ACCOUNT_NAME: ${{ secrets.AZURE_ACCOUNT_NAME }}
-          AZURE_ACCOUNT_KEY: ${{ secrets.AZURE_ACCOUNT_KEY }}
-          AZURE_CONTAINER_NAME: ${{ secrets.AZURE_CONTAINER_NAME }}
-          AZURE_DEFAULT_PATH: ${{ secrets.AZURE_DEFAULT_PATH }}
-          AZURE_REMOVE_CN: ${{ secrets.AZURE_REMOVE_CN }}
-          DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
-          DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
-          DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
-          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+WORKDIR /app
+ENV NODE_ENV=development
+EXPOSE 1337
 
+# Copiamos todo desde build stage
+COPY --from=builder /app /app
+
+# Variables runtime (pueden sobrescribirse desde ACA o GitHub Actions)
+ENV AZURE_ACCOUNT_NAME=$AZURE_ACCOUNT_NAME
+ENV AZURE_ACCOUNT_KEY=$AZURE_ACCOUNT_KEY
+ENV AZURE_CONTAINER_NAME=$AZURE_CONTAINER_NAME
+ENV AZURE_DEFAULT_PATH=$AZURE_DEFAULT_PATH
+ENV AZURE_REMOVE_CN=$AZURE_REMOVE_CN
+ENV DATABASE_CLIENT=$DATABASE_CLIENT
+ENV DATABASE_HOST=$DATABASE_HOST
+ENV DATABASE_PORT=$DATABASE_PORT
+ENV DATABASE_NAME=$DATABASE_NAME
+ENV DATABASE_USERNAME=$DATABASE_USERNAME
+ENV DATABASE_PASSWORD=$DATABASE_PASSWORD
+ENV DATABASE_SSL=$DATABASE_SSL
+ENV ADMIN_STRAPI_JWT_SECRET=$ADMIN_STRAPI_JWT_SECRET
+ENV STRAPI_APP_KEYS=$STRAPI_APP_KEYS
+ENV STRAPI_API_TOKEN_SALT=$STRAPI_API_TOKEN_SALT
+ENV STRAPI_JWT_SECRET=$STRAPI_JWT_SECRET
+
+# Usuario no root
+RUN useradd -m strapi
+USER strapi
+
+CMD ["npm", "run", "start"]
