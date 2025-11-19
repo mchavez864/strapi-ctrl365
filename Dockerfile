@@ -1,7 +1,7 @@
 # ---- BUILD STAGE ----
 FROM node:18-slim AS builder
 
-# Dependencias necesarias para Strapi, sharp, sqlite, etc.
+# Dependencias necesarias para Strapi, sharp, vips, etc.
 RUN apt-get update && apt-get install -y \
     build-essential \
     python3 \
@@ -13,15 +13,17 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copiamos package.json y yarn.lock
-COPY package.json yarn.lock ./
+COPY package*.json yarn.lock* ./
 
-# Instalamos dependencias con Yarn (lockfile obligatorio)
-RUN yarn install --frozen-lockfile
+# Instalamos dependencias
+RUN if [ -f yarn.lock ]; then yarn install --frozen-lockfile --network-concurrency 1; \
+    else npm install --no-audit --prefer-offline --progress=false; \
+    fi
 
-# Copiamos todo el código
+# Copiamos el resto del código
 COPY . .
 
-# ---- ARGs de secretos y DB ----
+# ---- ARGs para build ----
 ARG AZURE_ACCOUNT_NAME
 ARG AZURE_ACCOUNT_KEY
 ARG AZURE_CONTAINER_NAME
@@ -36,10 +38,10 @@ ARG DATABASE_USERNAME
 ARG DATABASE_PASSWORD
 ARG DATABASE_SSL
 
-ARG ADMIN_JWT_SECRET
-ARG APP_KEYS
-ARG API_TOKEN_SALT
-ARG JWT_SECRET
+ARG ADMIN_STRAPI_JWT_SECRET
+ARG STRAPI_APP_KEYS
+ARG STRAPI_API_TOKEN_SALT
+ARG STRAPI_JWT_SECRET
 
 # ---- ENV temporales para build ----
 ENV AZURE_ACCOUNT_NAME=$AZURE_ACCOUNT_NAME
@@ -56,12 +58,12 @@ ENV DATABASE_USERNAME=$DATABASE_USERNAME
 ENV DATABASE_PASSWORD=$DATABASE_PASSWORD
 ENV DATABASE_SSL=$DATABASE_SSL
 
-ENV ADMIN_JWT_SECRET=$ADMIN_JWT_SECRET
-ENV APP_KEYS=$APP_KEYS
-ENV API_TOKEN_SALT=$API_TOKEN_SALT
-ENV JWT_SECRET=$JWT_SECRET
+ENV ADMIN_STRAPI_JWT_SECRET=$ADMIN_STRAPI_JWT_SECRET
+ENV STRAPI_APP_KEYS=$STRAPI_APP_KEYS
+ENV STRAPI_API_TOKEN_SALT=$STRAPI_API_TOKEN_SALT
+ENV STRAPI_JWT_SECRET=$STRAPI_JWT_SECRET
 
-# Build del admin
+# Build del admin panel
 RUN yarn build
 
 # ---- RUNTIME STAGE ----
@@ -76,12 +78,32 @@ WORKDIR /app
 ENV NODE_ENV=development
 EXPOSE 1337
 
-# Copiamos desde build stage
+# Copiamos todo desde build stage
 COPY --from=builder /app /app
+
+# ---- ENV runtime (sobrescribe build args si es necesario) ----
+ENV AZURE_ACCOUNT_NAME=$AZURE_ACCOUNT_NAME
+ENV AZURE_ACCOUNT_KEY=$AZURE_ACCOUNT_KEY
+ENV AZURE_CONTAINER_NAME=$AZURE_CONTAINER_NAME
+ENV AZURE_DEFAULT_PATH=$AZURE_DEFAULT_PATH
+ENV AZURE_REMOVE_CN=$AZURE_REMOVE_CN
+
+ENV DATABASE_CLIENT=$DATABASE_CLIENT
+ENV DATABASE_HOST=$DATABASE_HOST
+ENV DATABASE_PORT=$DATABASE_PORT
+ENV DATABASE_NAME=$DATABASE_NAME
+ENV DATABASE_USERNAME=$DATABASE_USERNAME
+ENV DATABASE_PASSWORD=$DATABASE_PASSWORD
+ENV DATABASE_SSL=$DATABASE_SSL
+
+ENV ADMIN_STRAPI_JWT_SECRET=$ADMIN_STRAPI_JWT_SECRET
+ENV STRAPI_APP_KEYS=$STRAPI_APP_KEYS
+ENV STRAPI_API_TOKEN_SALT=$STRAPI_API_TOKEN_SALT
+ENV STRAPI_JWT_SECRET=$STRAPI_JWT_SECRET
 
 # Usuario no root
 RUN useradd -m strapi
 USER strapi
 
-# CMD para desarrollo/staging
+# Comando por defecto
 CMD ["npm", "run", "start"]
