@@ -1,4 +1,4 @@
-// ./config/plugins.js
+// config/plugins.js
 module.exports = ({ env }) => ({
   upload: {
     config: {
@@ -8,12 +8,13 @@ module.exports = ({ env }) => ({
         accountKey: env('AZURE_ACCOUNT_KEY'),
         containerName: env('AZURE_CONTAINER_NAME'),
         defaultPath: env('AZURE_DEFAULT_PATH', 'uploads'),
-        azureUploadSasToken: env('AZURE_SAS_TOKEN', null), // opcional
+        azureUploadSasToken: env('AZURE_SAS_TOKEN', null),
         removeContainerName: env('AZURE_REMOVE_CN') === 'true',
         maxConcurrent: 10,
-        serviceBaseURL: env('AZURE_SERVICE_BASE_URL', null), // opcional CDN
+        serviceBaseURL: env('AZURE_SERVICE_BASE_URL', null),
       },
     },
   },
 });
+
 
