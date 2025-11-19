@@ -1,27 +1,39 @@
+# --------------------
 # ---- BUILD STAGE ----
+# --------------------
 FROM node:18-slim AS builder
 
-# Dependencias necesarias para Strapi
+# Dependencias necesarias para Strapi, sharp, vips, sqlite, etc.
 RUN apt-get update && apt-get install -y \
-  build-essential python3 pkg-config libvips-dev git \
-  && apt-get clean
+    build-essential \
+    python3 \
+    pkg-config \
+    libvips-dev \
+    git \
+    && apt-get clean
 
 WORKDIR /app
 
-# Copiamos package.json y lockfiles
+# Copiamos package.json y lockfiles si existen
 COPY package*.json yarn.lock* pnpm-lock.yaml* .npmrc* ./
 
-# Instalamos dependencias según lockfile
-RUN if [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
-    elif [ -f package-lock.json ]; then npm ci; \
-    elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm install --frozen-lockfile; \
-    else npm install; \
+# Instalación robusta de dependencias
+RUN set -ex; \
+    if [ -f yarn.lock ]; then \
+        echo "Using yarn.lock - installing dependencies with yarn"; \
+        yarn install --frozen-lockfile --verbose; \
+    elif [ -f pnpm-lock.yaml ]; then \
+        echo "Using pnpm-lock.yaml - installing dependencies with pnpm"; \
+        corepack enable pnpm && pnpm install --frozen-lockfile --reporter=append-only; \
+    else \
+        echo "No lockfile found - installing dependencies with npm"; \
+        npm install --no-audit --progress=false --verbose; \
     fi
 
-# Copiamos todo el código
+# Copiamos el código fuente
 COPY . .
 
-# ---- ARGs de secretos y DB ----
+# ---- ARGs para build (Azure + DB + Strapi) ----
 ARG AZURE_ACCOUNT_NAME
 ARG AZURE_ACCOUNT_KEY
 ARG AZURE_CONTAINER_NAME
@@ -61,22 +73,27 @@ ENV APP_KEYS=$APP_KEYS
 ENV API_TOKEN_SALT=$API_TOKEN_SALT
 ENV JWT_SECRET=$JWT_SECRET
 
-# Build del admin
-RUN yarn build
+# Build de Strapi
+RUN echo "Building Strapi admin panel..." && yarn build
 
+# --------------------
 # ---- RUNTIME STAGE ----
+# --------------------
 FROM node:18-slim
 
-RUN apt-get update && apt-get install -y libvips-dev && apt-get clean
+# Dependencias necesarias en runtime
+RUN apt-get update && apt-get install -y \
+    libvips-dev \
+    && apt-get clean
 
 WORKDIR /app
 ENV NODE_ENV=development
 EXPOSE 1337
 
-# Copiamos desde build
+# Copiamos todo desde build stage
 COPY --from=builder /app /app
 
-# Declaramos ENV runtime (se sobrescriben con ACA --set-env-vars)
+# ENV runtime (GitHub Actions sobrescribirá con --set-env-vars)
 ENV AZURE_ACCOUNT_NAME=$AZURE_ACCOUNT_NAME
 ENV AZURE_ACCOUNT_KEY=$AZURE_ACCOUNT_KEY
 ENV AZURE_CONTAINER_NAME=$AZURE_CONTAINER_NAME
@@ -100,4 +117,5 @@ ENV JWT_SECRET=$JWT_SECRET
 RUN useradd -m strapi
 USER strapi
 
+# CMD de Strapi
 CMD ["npm", "run", "start"]
