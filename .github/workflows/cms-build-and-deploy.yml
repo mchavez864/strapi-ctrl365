@@ -1,101 +1,80 @@
-name: CI/CD Strapi → Azure Container App
+name: Deploy Strapi Staging
 
 on:
   push:
     branches:
-      - main
-  workflow_dispatch:
-
-env:
-  IMAGE_NAME: strapi-ctrl365
-  CONTAINER_APP_NAME: strapi-ctrl365
-  RESOURCE_GROUP: WebCtrl365-staging
-  REGISTRY: <TU_REGISTRY_AZURE>.azurecr.io
+      - staging
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+    env:
+      IMAGE_NAME: strapi-ctrl365
+      CONTAINER_APP_NAME: strapi-ctrl365
+      RESOURCE_GROUP: WebCtrl365-staging
+      REGISTRY: ${{ secrets.REGISTRY }}
+
     steps:
-      # 1️⃣ Checkout repo
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v3
 
-      # 2️⃣ Login a Azure CLI
-      - name: Azure CLI Login
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Login to Azure
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # 3️⃣ Login al registro de contenedores de Azure
-      - name: Azure Container Registry Login
-        run: az acr login --name <TU_REGISTRY_AZURE>
-
-      # 4️⃣ Set ENV variables de secrets
-      - name: Export environment secrets
-        run: |
-          echo "DATABASE_CLIENT=${{ secrets.DATABASE_CLIENT }}" >> $GITHUB_ENV
-          echo "DATABASE_HOST=${{ secrets.DATABASE_HOST }}" >> $GITHUB_ENV
-          echo "DATABASE_PORT=3306" >> $GITHUB_ENV
-          echo "DATABASE_NAME=${{ secrets.DATABASE_NAME }}" >> $GITHUB_ENV
-          echo "DATABASE_USERNAME=${{ secrets.DATABASE_USERNAME }}" >> $GITHUB_ENV
-          echo "DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}" >> $GITHUB_ENV
-          echo "DATABASE_SSL=true" >> $GITHUB_ENV
-          echo "APP_KEYS=${{ secrets.APP_KEYS }}" >> $GITHUB_ENV
-          echo "API_TOKEN_SALT=${{ secrets.API_TOKEN_SALT }}" >> $GITHUB_ENV
-          echo "ADMIN_JWT_SECRET=${{ secrets.ADMIN_JWT_SECRET }}" >> $GITHUB_ENV
-          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> $GITHUB_ENV
-          echo "AZURE_ACCOUNT_NAME=${{ secrets.AZURE_ACCOUNT_NAME }}" >> $GITHUB_ENV
-          echo "AZURE_ACCOUNT_KEY=${{ secrets.AZURE_ACCOUNT_KEY }}" >> $GITHUB_ENV
-          echo "AZURE_CONTAINER_NAME=${{ secrets.AZURE_CONTAINER_NAME }}" >> $GITHUB_ENV
-          echo "AZURE_DEFAULT_PATH=${{ secrets.AZURE_DEFAULT_PATH }}" >> $GITHUB_ENV
-          echo "AZURE_REMOVE_CN=${{ secrets.AZURE_REMOVE_CN }}" >> $GITHUB_ENV
-
-      # 5️⃣ Build & Push Docker Image
-      - name: Build & Push Docker Image
+      # Build & Push Docker Image
+      - name: Build & Push Image
         run: |
           docker buildx build --push \
-            --build-arg AZURE_ACCOUNT_NAME=$AZURE_ACCOUNT_NAME \
-            --build-arg AZURE_ACCOUNT_KEY=$AZURE_ACCOUNT_KEY \
-            --build-arg AZURE_CONTAINER_NAME=$AZURE_CONTAINER_NAME \
-            --build-arg AZURE_DEFAULT_PATH=$AZURE_DEFAULT_PATH \
-            --build-arg AZURE_REMOVE_CN=$AZURE_REMOVE_CN \
-            --build-arg DATABASE_CLIENT=$DATABASE_CLIENT \
-            --build-arg DATABASE_HOST=$DATABASE_HOST \
-            --build-arg DATABASE_PORT=$DATABASE_PORT \
-            --build-arg DATABASE_NAME=$DATABASE_NAME \
-            --build-arg DATABASE_USERNAME=$DATABASE_USERNAME \
-            --build-arg DATABASE_PASSWORD=$DATABASE_PASSWORD \
-            --build-arg DATABASE_SSL=$DATABASE_SSL \
-            --build-arg ADMIN_JWT_SECRET=$ADMIN_JWT_SECRET \
-            --build-arg APP_KEYS=$APP_KEYS \
-            --build-arg API_TOKEN_SALT=$API_TOKEN_SALT \
-            --build-arg JWT_SECRET=$JWT_SECRET \
+            --build-arg AZURE_ACCOUNT_NAME=${{ secrets.AZURE_ACCOUNT_NAME }} \
+            --build-arg AZURE_ACCOUNT_KEY=${{ secrets.AZURE_ACCOUNT_KEY }} \
+            --build-arg AZURE_CONTAINER_NAME=${{ secrets.AZURE_CONTAINER_NAME }} \
+            --build-arg AZURE_DEFAULT_PATH=${{ secrets.AZURE_DEFAULT_PATH }} \
+            --build-arg AZURE_REMOVE_CN=${{ secrets.AZURE_REMOVE_CN }} \
+            --build-arg DATABASE_CLIENT=mysql \
+            --build-arg DATABASE_HOST=${{ secrets.DATABASE_HOST }} \
+            --build-arg DATABASE_PORT=3306 \
+            --build-arg DATABASE_NAME=${{ secrets.DATABASE_NAME }} \
+            --build-arg DATABASE_USERNAME=${{ secrets.DATABASE_USERNAME }} \
+            --build-arg DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }} \
+            --build-arg DATABASE_SSL=true \
+            --build-arg ADMIN_JWT_SECRET=${{ secrets.ADMIN_JWT_SECRET }} \
+            --build-arg APP_KEYS=${{ secrets.APP_KEYS }} \
+            --build-arg API_TOKEN_SALT=${{ secrets.API_TOKEN_SALT }} \
+            --build-arg JWT_SECRET=${{ secrets.JWT_SECRET }} \
             --file Dockerfile \
-            --tag $REGISTRY/$IMAGE_NAME:${{ github.sha }} \
-            --tag $REGISTRY/$IMAGE_NAME:latest .
+            --tag ${REGISTRY}/${IMAGE_NAME}:${{ github.sha }} \
+            --tag ${REGISTRY}/${IMAGE_NAME}:latest \
+            .
 
-      # 6️⃣ Deploy a Azure Container App con env-vars
+      # Deploy to Azure Container App
       - name: Deploy to Azure Container App
         run: |
           az containerapp update \
-            --name $CONTAINER_APP_NAME \
-            --resource-group $RESOURCE_GROUP \
-            --image $REGISTRY/$IMAGE_NAME:${{ github.sha }} \
+            --name ${CONTAINER_APP_NAME} \
+            --resource-group ${RESOURCE_GROUP} \
+            --image ${REGISTRY}/${IMAGE_NAME}:${{ github.sha }} \
             --set-env-vars \
-              DATABASE_CLIENT=$DATABASE_CLIENT \
-              DATABASE_HOST=$DATABASE_HOST \
-              DATABASE_PORT=$DATABASE_PORT \
-              DATABASE_NAME=$DATABASE_NAME \
-              DATABASE_USERNAME=$DATABASE_USERNAME \
-              DATABASE_PASSWORD=$DATABASE_PASSWORD \
-              DATABASE_SSL=$DATABASE_SSL \
-              APP_KEYS=$APP_KEYS \
-              API_TOKEN_SALT=$API_TOKEN_SALT \
-              ADMIN_JWT_SECRET=$ADMIN_JWT_SECRET \
-              JWT_SECRET=$JWT_SECRET \
-              AZURE_ACCOUNT_NAME=$AZURE_ACCOUNT_NAME \
-              AZURE_ACCOUNT_KEY=$AZURE_ACCOUNT_KEY \
-              AZURE_CONTAINER_NAME=$AZURE_CONTAINER_NAME \
-              AZURE_DEFAULT_PATH=$AZURE_DEFAULT_PATH \
-              AZURE_REMOVE_CN=$AZURE_REMOVE_CN
+              DATABASE_CLIENT=mysql \
+              DATABASE_HOST=${{ secrets.DATABASE_HOST }} \
+              DATABASE_PORT=3306 \
+              DATABASE_NAME=${{ secrets.DATABASE_NAME }} \
+              DATABASE_USERNAME=${{ secrets.DATABASE_USERNAME }} \
+              DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }} \
+              DATABASE_SSL=true \
+              APP_KEYS=${{ secrets.APP_KEYS }} \
+              API_TOKEN_SALT=${{ secrets.API_TOKEN_SALT }} \
+              ADMIN_JWT_SECRET=${{ secrets.ADMIN_JWT_SECRET }} \
+              JWT_SECRET=${{ secrets.JWT_SECRET }} \
+              AZURE_ACCOUNT_NAME=${{ secrets.AZURE_ACCOUNT_NAME }} \
+              AZURE_ACCOUNT_KEY=${{ secrets.AZURE_ACCOUNT_KEY }} \
+              AZURE_CONTAINER_NAME=${{ secrets.AZURE_CONTAINER_NAME }} \
+              AZURE_DEFAULT_PATH=${{ secrets.AZURE_DEFAULT_PATH }} \
+              AZURE_REMOVE_CN=${{ secrets.AZURE_REMOVE_CN }}
