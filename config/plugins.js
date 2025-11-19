@@ -9,7 +9,7 @@ module.exports = ({ env }) => ({
         containerName: env("AZURE_CONTAINER_NAME"),
         defaultPath: env("AZURE_DEFAULT_PATH", "uploads"),
         defaultCacheControl: env("AZURE_DEFAULT_CACHE_CONTROL", "public, max-age=31536000, immutable"),
-        removeContainerNameInUrl: env.bool("AZURE_REMOVE_CN", true),
+        removeContainerNameInUrl: env.bool("AZURE_REMOVE_CN", false),
       },
     },
   },
