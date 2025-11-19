@@ -1,51 +1,59 @@
 # ============================
 #       BUILDER STAGE
 # ============================
-FROM node:18-slim AS builder
+FROM node:22-alpine AS builder
 
-# Dependencias necesarias para Strapi + sharp + vips
-RUN apt-get update && apt-get install -y \
-    build-essential \
+# Dependencias para Strapi + sharp
+RUN apk add --no-cache \
+    build-base \
     python3 \
-    pkg-config \
-    libvips-dev \
+    vips-dev \
+    libpng-dev \
+    zlib-dev \
     git \
-    ca-certificates \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    bash \
+    ca-certificates
 
-WORKDIR /app
+WORKDIR /opt/app
 
-# Copiamos solo dependencias primero
-COPY package*.json ./
+# Copiamos package.json y lockfile si existe
+COPY package.json package-lock.json* ./
 
-# Instalamos dependencias (sin ci, para evitar fallos)
+# Instalamos dependencias sin CI
 RUN npm install --production --no-audit --prefer-offline
 
-# Copiamos el resto del proyecto
+# Copiamos todo el código
 COPY . .
 
 # Build del admin panel
 RUN npm run build
 
-
 # ============================
 #       RUNTIME STAGE
 # ============================
-FROM node:18-slim AS runtime
+FROM node:22-alpine AS runtime
 
-WORKDIR /app
-
-RUN apt-get update && apt-get install -y \
-    libvips-dev \
+# Dependencias necesarias en runtime
+RUN apk add --no-cache \
+    vips-dev \
+    libpng-dev \
+    zlib-dev \
     ca-certificates \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    bash
 
+WORKDIR /opt/app
 ENV NODE_ENV=production
 
-COPY --from=builder /app /app
+# Copiamos node_modules y build desde builder
+COPY --from=builder /opt/app/node_modules ./node_modules
+COPY --from=builder /opt/app ./ 
+
+ENV PATH=/opt/app/node_modules/.bin:$PATH
+
+# Corre como usuario no root
+RUN addgroup -S app && adduser -S app -G app
+RUN chown -R app:app /opt/app
+USER app
 
 EXPOSE 1337
-
 CMD ["npm", "start"]
