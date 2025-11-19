@@ -1,13 +1,9 @@
 # ---- BUILD STAGE ----
 FROM node:18-slim AS builder
 
-# Dependencias necesarias
+# Dependencias necesarias para Strapi
 RUN apt-get update && apt-get install -y \
-  build-essential \
-  python3 \
-  pkg-config \
-  libvips-dev \
-  git \
+  build-essential python3 pkg-config libvips-dev git \
   && apt-get clean
 
 WORKDIR /app
@@ -16,22 +12,22 @@ WORKDIR /app
 COPY package*.json yarn.lock* pnpm-lock.yaml* .npmrc* ./
 
 # Instalamos dependencias según lockfile
-RUN \
-  if [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then npm ci; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm install --frozen-lockfile; \
-  else npm install; \
-  fi
+RUN if [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
+    elif [ -f package-lock.json ]; then npm ci; \
+    elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm install --frozen-lockfile; \
+    else npm install; \
+    fi
 
 # Copiamos todo el código
 COPY . .
 
-# ---- ARGs para build ----
+# ---- ARGs de secretos y DB ----
 ARG AZURE_ACCOUNT_NAME
 ARG AZURE_ACCOUNT_KEY
 ARG AZURE_CONTAINER_NAME
 ARG AZURE_DEFAULT_PATH
 ARG AZURE_REMOVE_CN
+
 ARG DATABASE_CLIENT
 ARG DATABASE_HOST
 ARG DATABASE_PORT
@@ -39,6 +35,7 @@ ARG DATABASE_NAME
 ARG DATABASE_USERNAME
 ARG DATABASE_PASSWORD
 ARG DATABASE_SSL
+
 ARG ADMIN_JWT_SECRET
 ARG APP_KEYS
 ARG API_TOKEN_SALT
@@ -70,17 +67,16 @@ RUN yarn build
 # ---- RUNTIME STAGE ----
 FROM node:18-slim
 
-RUN apt-get update && apt-get install -y \
-  libvips-dev \
-  && apt-get clean
+RUN apt-get update && apt-get install -y libvips-dev && apt-get clean
 
 WORKDIR /app
 ENV NODE_ENV=development
 EXPOSE 1337
 
+# Copiamos desde build
 COPY --from=builder /app /app
 
-# Variables runtime (serán sobrescritas por ACA)
+# Declaramos ENV runtime (se sobrescriben con ACA --set-env-vars)
 ENV AZURE_ACCOUNT_NAME=$AZURE_ACCOUNT_NAME
 ENV AZURE_ACCOUNT_KEY=$AZURE_ACCOUNT_KEY
 ENV AZURE_CONTAINER_NAME=$AZURE_CONTAINER_NAME
