@@ -1,42 +1,58 @@
-# ---- BUILD STAGE ----
+# ============================
+#       BUILDER STAGE
+# ============================
 FROM node:18-slim AS builder
 
-# Dependencias necesarias para Strapi y build de assets
+# -------- Dependencias del sistema necesarias --------
 RUN apt-get update && apt-get install -y \
     build-essential \
     python3 \
     pkg-config \
     libvips-dev \
     git \
-    && apt-get clean
+    curl \
+    ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
+# Define la carpeta de trabajo
 WORKDIR /app
 
-# Copiamos package.json y yarn.lock
+# -------- Copia de archivos de dependencias --------
 COPY package.json yarn.lock ./
 
-# Instalamos dependencias con network-concurrency 1
-RUN yarn install --frozen-lockfile --network-concurrency 1
+# -------- Instalación de dependencias --------
+# network-concurrency y prefer-offline ayudan a evitar caídas en CI
+RUN yarn install --frozen-lockfile --network-concurrency 1 --prefer-offline
 
-# Copiamos el código fuente
+# -------- Copia del código fuente --------
 COPY . .
 
-# Build del admin
+# -------- Build del panel de administración --------
 RUN yarn build
 
-# ---- RUNTIME STAGE ----
-FROM node:18-slim
 
-# Dependencias necesarias para runtime
-RUN apt-get update && apt-get install -y libvips-dev && apt-get clean
+# ============================
+#       RUNTIME STAGE
+# ============================
+FROM node:18-slim AS runtime
 
 WORKDIR /app
-EXPOSE 1337
+
+# -------- Dependencias necesarias en runtime --------
+RUN apt-get update && apt-get install -y \
+    libvips-dev \
+    ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 ENV NODE_ENV=production
 
-# Copiamos la app desde build
+# Copiamos solo lo necesario para producir una imagen limpia
 COPY --from=builder /app /app
 
-# No definimos ENV con secretos directamente en el Dockerfile.
-# GitHub Actions pasará secrets en runtime mediante `--set-env-vars`.
+# Exponer el puerto de Strapi
+EXPOSE 1337
+
+# Iniciar Strapi
 CMD ["yarn", "start"]
