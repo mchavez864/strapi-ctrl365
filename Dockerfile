@@ -15,21 +15,24 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Define la carpeta de trabajo
+# Set working directory
 WORKDIR /app
 
-# -------- Copia de archivos de dependencias --------
-COPY package.json yarn.lock ./
+# -------- Copiamos solamente archivos de dependencias --------
+COPY package*.json ./
 
 # -------- Instalación de dependencias --------
-# network-concurrency y prefer-offline ayudan a evitar caídas en CI
-RUN yarn install --frozen-lockfile --network-concurrency 1 --prefer-offline
+# Flags recomendados para CI/CD:
+# --omit=dev             → omite dev deps (Strapi v5 no las necesita para build)
+# --no-audit             → evita errores de auditoría en CI
+# --prefer-offline       → reduce fallos en GitHub Actions
+RUN npm ci --omit=dev --no-audit --prefer-offline
 
-# -------- Copia del código fuente --------
+# -------- Copiamos el resto del código --------
 COPY . .
 
-# -------- Build del panel de administración --------
-RUN yarn build
+# -------- Build del panel de administración de Strapi --------
+RUN npm run build
 
 
 # ============================
@@ -48,11 +51,9 @@ RUN apt-get update && apt-get install -y \
 
 ENV NODE_ENV=production
 
-# Copiamos solo lo necesario para producir una imagen limpia
+# Copiamos del builder solo lo necesario
 COPY --from=builder /app /app
 
-# Exponer el puerto de Strapi
 EXPOSE 1337
 
-# Iniciar Strapi
-CMD ["yarn", "start"]
+CMD ["npm", "start"]
