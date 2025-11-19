@@ -26,7 +26,7 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # 3️⃣ Docker login to ACR
+      # 3️⃣ Docker login to Azure Container Registry
       - name: Docker Login
         run: |
           echo "${{ secrets.STRAPICTRL365_REGISTRY_PASSWORD }}" | docker login ${{ secrets.STRAPI_LOGIN_SERVER }} \
@@ -36,12 +36,13 @@ jobs:
       - name: Setup Docker Buildx
         run: docker buildx create --use
 
-      # 5️⃣ Calculate version number
-      - name: Calculate version number
-        run: echo "BUILD_NUM=${GITHUB_RUN_NUMBER}" >> $GITHUB_ENV
+      # 5️⃣ Set build number and SHA
+      - name: Set build number and SHA
+        run: |
+          echo "BUILD_NUM=${GITHUB_RUN_NUMBER}" >> $GITHUB_ENV
+          echo "GITHUB_SHA=${GITHUB_SHA}" >> $GITHUB_ENV
 
       # 6️⃣ Build & Push Docker Image
-      # 7️⃣ Build & Push Docker Image
       - name: Build & Push Docker Image
         run: |
           docker buildx build --push \
@@ -64,28 +65,30 @@ jobs:
             --build-arg STRAPI_JWT_SECRET=${{ secrets.STRAPI_JWT_SECRET }} \
             --tag $STRAPI_LOGIN_SERVER/$IMAGE_NAME:$GITHUB_SHA \
             --tag $STRAPI_LOGIN_SERVER/$IMAGE_NAME:latest \
+            --tag $STRAPI_LOGIN_SERVER/$IMAGE_NAME:1.0.$BUILD_NUM \
             .
 
-      # 7️⃣ Deploy to Azure Container App with runtime env-vars
+      # 7️⃣ Deploy to Azure Container App
       - name: Deploy to Azure Container App
         run: |
           az containerapp update \
-          --name $CONTAINER_APP_NAME \
-          --resource-group $RESOURCE_GROUP \
-          --image $STRAPI_LOGIN_SERVER/$IMAGE_NAME:$GITHUB_SHA \
-          --set-env-vars \
+            --name $CONTAINER_APP_NAME \
+            --resource-group $RESOURCE_GROUP \
+            --image $STRAPI_LOGIN_SERVER/$IMAGE_NAME:$GITHUB_SHA \
+            --set-env-vars \
               DATABASE_CLIENT=mysql \
               DATABASE_HOST=${{ secrets.DATABASE_HOST }} \
+              DATABASE_PORT=3306 \
+              DATABASE_NAME=${{ secrets.DATABASE_NAME }} \
               DATABASE_USERNAME=${{ secrets.DATABASE_USERNAME }} \
               DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }} \
+              DATABASE_SSL=true \
+              APP_KEYS=${{ secrets.STRAPI_APP_KEYS }} \
+              API_TOKEN_SALT=${{ secrets.STRAPI_API_TOKEN_SALT }} \
               ADMIN_JWT_SECRET=${{ secrets.ADMIN_STRAPI_JWT_SECRET }} \
-              STRAPI_APP_KEYS=${{ secrets.STRAPI_APP_KEYS }} \
-              STRAPI_API_TOKEN_SALT=${{ secrets.STRAPI_API_TOKEN_SALT }} \
-              STRAPI_JWT_SECRET=${{ secrets.STRAPI_JWT_SECRET }} \
+              JWT_SECRET=${{ secrets.STRAPI_JWT_SECRET }} \
               AZURE_ACCOUNT_NAME=${{ secrets.AZURE_ACCOUNT_NAME }} \
               AZURE_ACCOUNT_KEY=${{ secrets.AZURE_ACCOUNT_KEY }} \
               AZURE_CONTAINER_NAME=${{ secrets.AZURE_CONTAINER_NAME }} \
               AZURE_DEFAULT_PATH=${{ secrets.AZURE_DEFAULT_PATH }} \
               AZURE_REMOVE_CN=${{ secrets.AZURE_REMOVE_CN }}
-
-
