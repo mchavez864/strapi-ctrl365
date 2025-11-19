@@ -26,7 +26,7 @@ jobs:
           client-id: ${{ secrets.STRAPICTRL365_AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.STRAPICTRL365_AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.STRAPICTRL365_AZURE_SUBSCRIPTION_ID }}
-          auth-type: service-principal
+          auth-type: SERVICE_PRINCIPAL
 
 
       # 3️⃣ Login to Container Registry
@@ -97,4 +97,5 @@ jobs:
               AZURE_CONTAINER_NAME=${{ secrets.STRAPICTRL365_AZURE_CONTAINER_NAME }} \
               AZURE_DEFAULT_PATH=${{ secrets.STRAPICTRL365_AZURE_DEFAULT_PATH }} \
               AZURE_REMOVE_CN=${{ secrets.STRAPICTRL365_AZURE_REMOVE_CN }}
+
 
