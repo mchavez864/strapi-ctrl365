@@ -1,4 +1,4 @@
-name: CI/CD Staging - Strapi
+name: CI/CD Staging
 
 on:
   push:
@@ -9,7 +9,6 @@ env:
   IMAGE_NAME: strapi-ctrl365
   CONTAINER_APP_NAME: strapi-ctrl365
   RESOURCE_GROUP: WebCtrl365-staging
-  STRAPI_LOGIN_SERVER: ${{ secrets.STRAPI_LOGIN_SERVER }}
 
 jobs:
   build-and-deploy:
@@ -17,24 +16,29 @@ jobs:
 
     steps:
       # 1️⃣ Checkout repository
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Setup Node
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          cache: 'yarn'
-
-      # 3️⃣ Login to Azure
+      # 2️⃣ Log in to Azure CLI
       - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # 4️⃣ Build & Push Docker Image
-      - name: Build & Push Docker Image
+      # 3️⃣ Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      # 4️⃣ Log in to Container Registry
+      - name: Docker login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.STRAPI_LOGIN_USER }}
+          password: ${{ secrets.STRAPI_LOGIN_PASSWORD }}
+          registry: ${{ secrets.STRAPI_LOGIN_SERVER }}
+
+      # 5️⃣ Build & Push Docker Image
+      - name: Build & Push Image
         run: |
           docker buildx build --push \
             --build-arg AZURE_ACCOUNT_NAME=${{ secrets.AZURE_ACCOUNT_NAME }} \
@@ -54,17 +58,17 @@ jobs:
             --build-arg API_TOKEN_SALT=${{ secrets.API_TOKEN_SALT }} \
             --build-arg JWT_SECRET=${{ secrets.JWT_SECRET }} \
             --file Dockerfile \
-            --tag $STRAPI_LOGIN_SERVER/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-            --tag $STRAPI_LOGIN_SERVER/${{ env.IMAGE_NAME }}:latest \
+            --tag ${{ secrets.STRAPI_LOGIN_SERVER }}/${IMAGE_NAME}:${{ github.sha }} \
+            --tag ${{ secrets.STRAPI_LOGIN_SERVER }}/${IMAGE_NAME}:latest \
             .
 
-      # 5️⃣ Deploy to Azure Container App
+      # 6️⃣ Deploy to Azure Container App
       - name: Deploy to Azure Container App
         run: |
           az containerapp update \
-            --name $CONTAINER_APP_NAME \
-            --resource-group $RESOURCE_GROUP \
-            --image $STRAPI_LOGIN_SERVER/$IMAGE_NAME:${{ github.sha }} \
+            --name ${CONTAINER_APP_NAME} \
+            --resource-group ${RESOURCE_GROUP} \
+            --image ${{ secrets.STRAPI_LOGIN_SERVER }}/${IMAGE_NAME}:${{ github.sha }} \
             --set-env-vars \
               DATABASE_CLIENT=mysql \
               DATABASE_HOST=${{ secrets.DATABASE_HOST }} \
@@ -82,11 +86,3 @@ jobs:
               AZURE_CONTAINER_NAME=${{ secrets.AZURE_CONTAINER_NAME }} \
               AZURE_DEFAULT_PATH=${{ secrets.AZURE_DEFAULT_PATH }} \
               AZURE_REMOVE_CN=${{ secrets.AZURE_REMOVE_CN }}
-
-      # 6️⃣ Show container logs for verification
-      - name: Show Azure Container App logs
-        run: |
-          az containerapp logs show \
-            --name $CONTAINER_APP_NAME \
-            --resource-group $RESOURCE_GROUP \
-            --follow
