@@ -49,7 +49,7 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-ENV NODE_ENV=production
+ENV NODE_ENV=staging
 
 # Copiamos del builder solo lo necesario
 COPY --from=builder /app /app
