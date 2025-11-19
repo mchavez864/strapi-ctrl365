@@ -1,23 +1,15 @@
-// ./config/server.js
-
+// config/server.js
 module.exports = ({ env }) => ({
-  host: env('HOST', '0.0.0.0'),
-  port: env.int('PORT', 1337),
+  host: env("HOST", "0.0.0.0"),
+  port: env.int("PORT", 1337),
   app: {
-    // Usamos el secreto STRAPI_APP_KEYS como arreglo
-    keys: env.array('STRAPI_APP_KEYS'),
-  },
-  webhooks: {
-    populateRelations: env.bool('WEBHOOKS_POPULATE_RELATIONS', false),
+    keys: env.array("STRAPI_APP_KEYS"),
   },
   admin: {
     auth: {
-      secret: env('ADMIN_STRAPI_JWT_SECRET'),
+      secret: env("ADMIN_STRAPI_JWT_SECRET"),
     },
   },
-  // JWT para API
-  jwt: {
-    secret: env('STRAPI_JWT_SECRET'),
-  },
 });
+
 
