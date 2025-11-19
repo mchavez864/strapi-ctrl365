@@ -3,13 +3,7 @@ module.exports = ({ env }) => ({
   host: env("HOST", "0.0.0.0"),
   port: env.int("PORT", 1337),
   app: {
-    keys: env.array("STRAPI_APP_KEYS"),
-  },
-  admin: {
-    auth: {
-      secret: env("ADMIN_STRAPI_JWT_SECRET"),
-    },
+    // Usamos APP_KEYS, que es lo que tenés en .env.example y en los secrets
+    keys: env.array("APP_KEYS"),
   },
 });
-
-
