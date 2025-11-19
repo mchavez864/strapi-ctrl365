@@ -31,14 +31,52 @@ jobs:
         run: docker buildx create --use
 
       # 4️⃣ Validate required secrets
-      - name: Validate Secrets
-        run: |
-          REQUIRED_SECRETS=("STRAPICTRL365_REGISTRY_USERNAME" "STRAPICTRL365_REGISTRY_PASSWORD" "ADMIN_STRAPI_JWT_SECRET" "STRAPI_APP_KEYS" "STRAPI_API_TOKEN_SALT" "STRAPI_JWT_SECRET" "AZURE_ACCOUNT_NAME" "AZURE_ACCOUNT_KEY" "AZURE_CONTAINER_NAME" "AZURE_DEFAULT_PATH" "AZURE_REMOVE_CN")
-          for SECRET in "${REQUIRED_SECRETS[@]}"; do
-            if [ -z "${{ secrets[$SECRET] }}" ]; then
-              echo "❌ Secret $SECRET no está configurado"
-              exit 1
-            fi
+      - name: Validate required secrets
+  run: |
+    if [ -z "${{ secrets.STRAPICTRL365_REGISTRY_USERNAME }}" ]; then
+      echo "❌ STRAPICTRL365_REGISTRY_USERNAME no está configurado"
+      exit 1
+    fi
+    if [ -z "${{ secrets.STRAPICTRL365_REGISTRY_PASSWORD }}" ]; then
+      echo "❌ STRAPICTRL365_REGISTRY_PASSWORD no está configurado"
+      exit 1
+    fi
+    if [ -z "${{ secrets.ADMIN_STRAPI_JWT_SECRET }}" ]; then
+      echo "❌ ADMIN_STRAPI_JWT_SECRET no está configurado"
+      exit 1
+    fi
+    if [ -z "${{ secrets.STRAPI_APP_KEYS }}" ]; then
+      echo "❌ STRAPI_APP_KEYS no está configurado"
+      exit 1
+    fi
+    if [ -z "${{ secrets.STRAPI_API_TOKEN_SALT }}" ]; then
+      echo "❌ STRAPI_API_TOKEN_SALT no está configurado"
+      exit 1
+    fi
+    if [ -z "${{ secrets.STRAPI_JWT_SECRET }}" ]; then
+      echo "❌ STRAPI_JWT_SECRET no está configurado"
+      exit 1
+    fi
+    if [ -z "${{ secrets.AZURE_ACCOUNT_NAME }}" ]; then
+      echo "❌ AZURE_ACCOUNT_NAME no está configurado"
+      exit 1
+    fi
+    if [ -z "${{ secrets.AZURE_ACCOUNT_KEY }}" ]; then
+      echo "❌ AZURE_ACCOUNT_KEY no está configurado"
+      exit 1
+    fi
+    if [ -z "${{ secrets.AZURE_CONTAINER_NAME }}" ]; then
+      echo "❌ AZURE_CONTAINER_NAME no está configurado"
+      exit 1
+    fi
+    if [ -z "${{ secrets.AZURE_DEFAULT_PATH }}" ]; then
+      echo "❌ AZURE_DEFAULT_PATH no está configurado"
+      exit 1
+    fi
+    if [ -z "${{ secrets.AZURE_REMOVE_CN }}" ]; then
+      echo "❌ AZURE_REMOVE_CN no está configurado"
+      exit 1
+    fi
           done
 
       # 5️⃣ Docker Login
@@ -103,3 +141,4 @@ jobs:
               AZURE_CONTAINER_NAME=${{ secrets.AZURE_CONTAINER_NAME }} \
               AZURE_DEFAULT_PATH=${{ secrets.AZURE_DEFAULT_PATH }} \
               AZURE_REMOVE_CN=${{ secrets.AZURE_REMOVE_CN }}
+
