@@ -3,35 +3,29 @@
 # ============================
 FROM node:18-slim AS builder
 
-# -------- Dependencias del sistema necesarias --------
+# Dependencias necesarias para Strapi + sharp + vips
 RUN apt-get update && apt-get install -y \
     build-essential \
     python3 \
     pkg-config \
     libvips-dev \
     git \
-    curl \
     ca-certificates \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
 WORKDIR /app
 
-# -------- Copiamos solamente archivos de dependencias --------
+# Copiamos solo dependencias primero
 COPY package*.json ./
 
-# -------- Instalación de dependencias --------
-# Flags recomendados para CI/CD:
-# --omit=dev             → omite dev deps (Strapi v5 no las necesita para build)
-# --no-audit             → evita errores de auditoría en CI
-# --prefer-offline       → reduce fallos en GitHub Actions
-RUN npm ci --omit=dev --no-audit --prefer-offline
+# Instalamos dependencias (sin ci, para evitar fallos)
+RUN npm install --production --no-audit --prefer-offline
 
-# -------- Copiamos el resto del código --------
+# Copiamos el resto del proyecto
 COPY . .
 
-# -------- Build del panel de administración de Strapi --------
+# Build del admin panel
 RUN npm run build
 
 
@@ -42,16 +36,14 @@ FROM node:18-slim AS runtime
 
 WORKDIR /app
 
-# -------- Dependencias necesarias en runtime --------
 RUN apt-get update && apt-get install -y \
     libvips-dev \
     ca-certificates \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-ENV NODE_ENV=staging
+ENV NODE_ENV=production
 
-# Copiamos del builder solo lo necesario
 COPY --from=builder /app /app
 
 EXPOSE 1337
