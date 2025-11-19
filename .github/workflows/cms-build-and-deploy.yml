@@ -33,10 +33,11 @@ jobs:
     - name: Azure Login
       uses: azure/login@v1
       with:
-        client-id: ${{ secrets.STRAPICTRL365_AZURE_CLIENT_ID }}
-        tenant-id: ${{ secrets.STRAPICTRL365_AZURE_TENANT_ID }}
-        subscription-id: ${{ secrets.STRAPICTRL365_AZURE_SUBSCRIPTION_ID }}
-        auth-type: SERVICE_PRINCIPAL
+        #client-id: ${{ secrets.STRAPICTRL365_AZURE_CLIENT_ID }}
+        #tenant-id: ${{ secrets.STRAPICTRL365_AZURE_TENANT_ID }}
+        #subscription-id: ${{ secrets.STRAPICTRL365_AZURE_SUBSCRIPTION_ID }}
+        #auth-type: SERVICE_PRINCIPAL
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
 
     # 4️⃣ Login to Container Registry
     - name: Login to Azure Container Registry
@@ -95,3 +96,4 @@ jobs:
             AZURE_CONTAINER_NAME=${{ secrets.AZURE_CONTAINER_NAME }} \
             AZURE_DEFAULT_PATH=${{ secrets.AZURE_DEFAULT_PATH }} \
             AZURE_REMOVE_CN=${{ secrets.AZURE_REMOVE_CN }}
+
