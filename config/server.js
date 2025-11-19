@@ -3,7 +3,7 @@ module.exports = ({ env }) => ({
   host: env("HOST", "0.0.0.0"),
   port: env.int("PORT", 1337),
   app: {
-    // Usamos APP_KEYS, igual que en .env.example y en el set-env-vars del workflow
+    // Entra desde APP_KEYS, que en Azure va a venir de STAGING_STRAPI_APP_KEYS
     keys: env.array("APP_KEYS"),
   },
 });
