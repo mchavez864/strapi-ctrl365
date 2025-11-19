@@ -1,4 +1,4 @@
-name: CMS Build & Deploy Dev
+name: CMS Build & Deploy Dev (staging)
 
 on:
   push:
@@ -8,8 +8,8 @@ on:
 env:
   IMAGE_NAME: strapi-ctrl365
   CONTAINER_APP_NAME: strapi-ctrl365
-  RESOURCE_GROUP: WebCtrl365-staging            # ajustá el nombre real de tu RG
-  STRAPI_LOGIN_SERVER: ${{ secrets.STRAPI_LOGIN_SERVER }}
+  RESOURCE_GROUP: WebCtrl365-staging              # ajustá si tu RG se llama distinto
+  STRAPI_LOGIN_SERVER: ${{ secrets.STAGING_STRAPI_LOGIN_SERVER }}
 
 jobs:
   build-and-deploy:
@@ -19,21 +19,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 1) LOGIN A AZURE (usa el secret AZURE_CREDENTIALS)
+      # 1) Login a Azure con service principal JSON
       - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # 2) LOGIN AL REGISTRY (ACR u otro)
+      # 2) Login al Container Registry (ACR u otro)
       - name: Docker Login
         uses: docker/login-action@v3
         with:
           registry: ${{ env.STRAPI_LOGIN_SERVER }}
-          username: ${{ secrets.STRAPICTRL365_REGISTRY_USERNAME }}
-          password: ${{ secrets.STRAPICTRL365_REGISTRY_PASSWORD }}
+          username: ${{ secrets.STAGING_STRAPI_CONTAINER_REGISTRY_USERNAME }}
+          password: ${{ secrets.STAGING_STRAPI_CONTAINER_REGISTRY_PASSWORD }}
 
-      # 3) BUILD & PUSH de la imagen Docker
+      # 3) Build & Push de la imagen Docker (sin secretos como build-args)
       - name: Build and Push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -44,25 +44,8 @@ jobs:
             ${{ env.STRAPI_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:dev-latest
           build-args: |
             NODE_ENV=development
-            DATABASE_CLIENT=mysql
-            DATABASE_HOST=${{ secrets.STRAPI_DB_HOST }}
-            DATABASE_PORT=${{ secrets.STRAPI_DB_PORT }}
-            DATABASE_NAME=${{ secrets.STRAPI_DB_NAME }}
-            DATABASE_USERNAME=${{ secrets.STRAPI_DB_USER }}
-            DATABASE_PASSWORD=${{ secrets.STRAPI_DB_PASSWORD }}
-            DATABASE_SSL=${{ secrets.STRAPI_DB_SSL }}
-            STRAPI_APP_KEYS=${{ secrets.STRAPI_APP_KEYS }}
-            STRAPI_API_TOKEN_SALT=${{ secrets.STRAPI_API_TOKEN_SALT }}
-            STRAPI_ADMIN_JWT_SECRET=${{ secrets.STRAPI_ADMIN_JWT_SECRET }}
-            STRAPI_JWT_SECRET=${{ secrets.STRAPI_JWT_SECRET }}
-            STRAPI_AZURE_ACCOUNT_NAME=${{ secrets.STRAPI_AZURE_ACCOUNT_NAME }}
-            STRAPI_AZURE_ACCOUNT_KEY=${{ secrets.STRAPI_AZURE_ACCOUNT_KEY }}
-            STRAPI_AZURE_CONTAINER_NAME=${{ secrets.STRAPI_AZURE_CONTAINER_NAME }}
-            STRAPI_AZURE_DEFAULT_PATH=${{ secrets.STRAPI_AZURE_DEFAULT_PATH }}
-            STRAPI_AZURE_REMOVE_CN=${{ secrets.STRAPI_AZURE_REMOVE_CN }}
-            AZURE_DEFAULT_CACHE_CONTROL=${{ secrets.AZURE_DEFAULT_CACHE_CONTROL }}
 
-      # 4) DEPLOY A AZURE CONTAINER APPS
+      # 4) Deploy a Azure Container Apps
       - name: Deploy to Azure Container Apps
         uses: azure/cli@v2
         with:
@@ -74,20 +57,19 @@ jobs:
               --set-env-vars \
                 NODE_ENV=development \
                 DATABASE_CLIENT=mysql \
-                DATABASE_HOST=${{ secrets.STRAPI_DB_HOST }} \
-                DATABASE_PORT=${{ secrets.STRAPI_DB_PORT }} \
-                DATABASE_NAME=${{ secrets.STRAPI_DB_NAME }} \
-                DATABASE_USERNAME=${{ secrets.STRAPI_DB_USER }} \
-                DATABASE_PASSWORD=${{ secrets.STRAPI_DB_PASSWORD }} \
-                DATABASE_SSL=${{ secrets.STRAPI_DB_SSL }} \
-                APP_KEYS=${{ secrets.STRAPI_APP_KEYS }} \
-                API_TOKEN_SALT=${{ secrets.STRAPI_API_TOKEN_SALT }} \
-                ADMIN_JWT_SECRET=${{ secrets.STRAPI_ADMIN_JWT_SECRET }} \
-                JWT_SECRET=${{ secrets.STRAPI_JWT_SECRET }} \
-                AZURE_ACCOUNT_NAME=${{ secrets.STRAPI_AZURE_ACCOUNT_NAME }} \
-                AZURE_ACCOUNT_KEY=${{ secrets.STRAPI_AZURE_ACCOUNT_KEY }} \
-                AZURE_CONTAINER_NAME=${{ secrets.STRAPI_AZURE_CONTAINER_NAME }} \
-                AZURE_DEFAULT_PATH=${{ secrets.STRAPI_AZURE_DEFAULT_PATH }} \
-                AZURE_DEFAULT_CACHE_CONTROL=${{ secrets.AZURE_DEFAULT_CACHE_CONTROL }} \
-                AZURE_REMOVE_CN=${{ secrets.STRAPI_AZURE_REMOVE_CN }}
-
+                DATABASE_HOST=${{ secrets.DB_HOST }} \
+                DATABASE_PORT=${{ secrets.DB_PORT }} \
+                DATABASE_NAME=${{ secrets.STAGING_STRAPI_DB_NAME }} \
+                DATABASE_USERNAME=${{ secrets.DB_USER }} \
+                DATABASE_PASSWORD=${{ secrets.DB_PASSWORD }} \
+                DATABASE_SSL=${{ secrets.DB_SSL }} \
+                APP_KEYS=${{ secrets.STAGING_STRAPI_APP_KEYS }} \
+                API_TOKEN_SALT=${{ secrets.STAGING_STRAPI_API_TOKEN_SALT }} \
+                ADMIN_JWT_SECRET=${{ secrets.STAGING_STRAPI_ADMIN_JWT_SECRET }} \
+                JWT_SECRET=${{ secrets.STAGING_STRAPI_JWT_SECRET }} \
+                AZURE_ACCOUNT_NAME=${{ secrets.AZURE_ACCOUNT_NAME }} \
+                AZURE_ACCOUNT_KEY=${{ secrets.AZURE_ACCOUNT_KEY }} \
+                AZURE_CONTAINER_NAME=${{ secrets.SA_AZURE_ACCOUNT_NAME }} \
+                AZURE_DEFAULT_PATH=${{ secrets.AZURE_DEFAULT_PATH }} \
+                AZURE_REMOVE_CN=${{ secrets.AZURE_REMOVE_CN }} \
+                "AZURE_DEFAULT_CACHE_CONTROL=${{ secrets.AZURE_DEFAULT_CACHE_CONTROL }}"
