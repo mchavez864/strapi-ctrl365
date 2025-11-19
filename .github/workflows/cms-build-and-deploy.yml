@@ -1,4 +1,4 @@
-name: CI/CD Staging
+name: Deploy Strapi Staging
 
 on:
   push:
@@ -15,37 +15,46 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repository
+      # 1️⃣ Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Log in to Azure CLI
+      # 2️⃣ Login to Azure
       - name: Azure Login
         uses: azure/login@v1
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.STRAPICTRL365_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.STRAPICTRL365_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.STRAPICTRL365_AZURE_SUBSCRIPTION_ID }}
 
-      # 3️⃣ Set up Docker Buildx
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      # 4️⃣ Log in to Container Registry
+      # 3️⃣ Login to Container Registry
       - name: Docker login
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.STRAPI_LOGIN_USER }}
-          password: ${{ secrets.STRAPI_LOGIN_PASSWORD }}
+          username: ${{ secrets.STRAPICTRL365_REGISTRY_USERNAME }}
+          password: ${{ secrets.STRAPICTRL365_REGISTRY_PASSWORD }}
           registry: ${{ secrets.STRAPI_LOGIN_SERVER }}
 
-      # 5️⃣ Build & Push Docker Image
-      - name: Build & Push Image
+      # 4️⃣ Set up Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'yarn'
+
+      # 5️⃣ Install dependencies (yarn)
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      # 6️⃣ Build & Push Docker Image
+      - name: Build & Push Docker Image
         run: |
           docker buildx build --push \
-            --build-arg AZURE_ACCOUNT_NAME=${{ secrets.AZURE_ACCOUNT_NAME }} \
-            --build-arg AZURE_ACCOUNT_KEY=${{ secrets.AZURE_ACCOUNT_KEY }} \
-            --build-arg AZURE_CONTAINER_NAME=${{ secrets.AZURE_CONTAINER_NAME }} \
-            --build-arg AZURE_DEFAULT_PATH=${{ secrets.AZURE_DEFAULT_PATH }} \
-            --build-arg AZURE_REMOVE_CN=${{ secrets.AZURE_REMOVE_CN }} \
+            --build-arg AZURE_ACCOUNT_NAME=${{ secrets.STRAPICTRL365_AZURE_ACCOUNT_NAME }} \
+            --build-arg AZURE_ACCOUNT_KEY=${{ secrets.STRAPICTRL365_AZURE_ACCOUNT_KEY }} \
+            --build-arg AZURE_CONTAINER_NAME=${{ secrets.STRAPICTRL365_AZURE_CONTAINER_NAME }} \
+            --build-arg AZURE_DEFAULT_PATH=${{ secrets.STRAPICTRL365_AZURE_DEFAULT_PATH }} \
+            --build-arg AZURE_REMOVE_CN=${{ secrets.STRAPICTRL365_AZURE_REMOVE_CN }} \
             --build-arg DATABASE_CLIENT=mysql \
             --build-arg DATABASE_HOST=${{ secrets.DATABASE_HOST }} \
             --build-arg DATABASE_PORT=3306 \
@@ -58,17 +67,17 @@ jobs:
             --build-arg API_TOKEN_SALT=${{ secrets.API_TOKEN_SALT }} \
             --build-arg JWT_SECRET=${{ secrets.JWT_SECRET }} \
             --file Dockerfile \
-            --tag ${{ secrets.STRAPI_LOGIN_SERVER }}/${IMAGE_NAME}:${{ github.sha }} \
-            --tag ${{ secrets.STRAPI_LOGIN_SERVER }}/${IMAGE_NAME}:latest \
+            --tag ${{ secrets.STRAPI_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            --tag ${{ secrets.STRAPI_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest \
             .
 
-      # 6️⃣ Deploy to Azure Container App
+      # 7️⃣ Deploy to Azure Container App
       - name: Deploy to Azure Container App
         run: |
           az containerapp update \
-            --name ${CONTAINER_APP_NAME} \
-            --resource-group ${RESOURCE_GROUP} \
-            --image ${{ secrets.STRAPI_LOGIN_SERVER }}/${IMAGE_NAME}:${{ github.sha }} \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.RESOURCE_GROUP }} \
+            --image ${{ secrets.STRAPI_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
             --set-env-vars \
               DATABASE_CLIENT=mysql \
               DATABASE_HOST=${{ secrets.DATABASE_HOST }} \
@@ -81,8 +90,8 @@ jobs:
               API_TOKEN_SALT=${{ secrets.API_TOKEN_SALT }} \
               ADMIN_JWT_SECRET=${{ secrets.ADMIN_JWT_SECRET }} \
               JWT_SECRET=${{ secrets.JWT_SECRET }} \
-              AZURE_ACCOUNT_NAME=${{ secrets.AZURE_ACCOUNT_NAME }} \
-              AZURE_ACCOUNT_KEY=${{ secrets.AZURE_ACCOUNT_KEY }} \
-              AZURE_CONTAINER_NAME=${{ secrets.AZURE_CONTAINER_NAME }} \
-              AZURE_DEFAULT_PATH=${{ secrets.AZURE_DEFAULT_PATH }} \
-              AZURE_REMOVE_CN=${{ secrets.AZURE_REMOVE_CN }}
+              AZURE_ACCOUNT_NAME=${{ secrets.STRAPICTRL365_AZURE_ACCOUNT_NAME }} \
+              AZURE_ACCOUNT_KEY=${{ secrets.STRAPICTRL365_AZURE_ACCOUNT_KEY }} \
+              AZURE_CONTAINER_NAME=${{ secrets.STRAPICTRL365_AZURE_CONTAINER_NAME }} \
+              AZURE_DEFAULT_PATH=${{ secrets.STRAPICTRL365_AZURE_DEFAULT_PATH }} \
+              AZURE_REMOVE_CN=${{ secrets.STRAPICTRL365_AZURE_REMOVE_CN }}
