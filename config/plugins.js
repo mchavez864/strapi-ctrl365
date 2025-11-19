@@ -1,4 +1,4 @@
-// config/plugins.js
+// ./config/plugins.js
 module.exports = ({ env }) => ({
   upload: {
     config: {
@@ -16,6 +16,3 @@ module.exports = ({ env }) => ({
     },
   },
 });
-
-
-
