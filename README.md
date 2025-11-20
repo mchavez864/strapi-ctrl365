@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # CTRL 365 CMS
 
 Sistema de gestión de contenidos (CMS) construido con Strapi para el proyecto CTRL 365.
@@ -314,3 +315,6 @@ Ver más opciones en la [documentación oficial de despliegue](https://docs.stra
 - [Plugin Development](https://docs.strapi.io/dev-docs/plugins-development) - Crear plugins
 
 Desarrollado con Strapi v5.28.0
+=======
+# strapi-ctrl365
+>>>>>>> a736af4edac920a7ad6c82f73fdd4cc86c80404d
