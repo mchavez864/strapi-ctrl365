@@ -1,0 +1,49 @@
+name: Trigger auto deployment for ctrl365-strapi-prod
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ staging ]
+    paths:
+    - '**'
+    - '.github/workflows/ctrl365-strapi-prod-AutoDeployTrigger-fc30c12d-b51f-40e3-b2cf-e5f7de52ab2e.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:      
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions: 
+      id-token: write #This is required for requesting the OIDC JWT Token
+      contents: read #Required when GH token is used to authenticate with private repo
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.CTRL365STRAPIPROD_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.CTRL365STRAPIPROD_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.CTRL365STRAPIPROD_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }}
+          _dockerfilePathKey_: _dockerfilePath_
+          _targetLabelKey_: _targetLabel_
+          registryUrl: ctrl365webprod-ajb0dnfdaagjdzfj.azurecr.io
+          registryUsername: ${{ secrets.CTRL365STRAPIPROD_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.CTRL365STRAPIPROD_REGISTRY_PASSWORD }}
+          containerAppName: ctrl365-strapi-prod
+          resourceGroup: ctrl365-web-prod
+          imageToBuild: ctrl365webprod-ajb0dnfdaagjdzfj.azurecr.io/ctrl365-strapi-prod:${{ github.sha }}
+          _buildArgumentsKey_: |
+            _buildArgumentsValues_
+
+
