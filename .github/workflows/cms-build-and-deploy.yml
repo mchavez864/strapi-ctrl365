@@ -92,3 +92,4 @@ jobs:
                 AZURE_DEFAULT_PATH=${{ secrets.AZURE_DEFAULT_PATH }} \
                 AZURE_REMOVE_CN=${{ secrets.AZURE_REMOVE_CN }} \
                 "AZURE_DEFAULT_CACHE_CONTROL=${{ secrets.AZURE_DEFAULT_CACHE_CONTROL }}"
+
